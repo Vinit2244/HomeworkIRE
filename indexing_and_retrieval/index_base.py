@@ -82,6 +82,16 @@ class IndexBase(ABC):
             add_files: An iterable (list-like object) of tuples, where each tuple contains the file id and its content to be added.
         """
         pass
+
+    @abstractmethod
+    def query(query: str) -> str:
+        """Queries the already loaded index to generate a results json and return as str
+        Args:
+            query: Input query in str format
+        Returns:
+            results: Output json str with results
+        """
+        pass
   
     @abstractmethod
     def delete_index(index_id: str) -> None:
