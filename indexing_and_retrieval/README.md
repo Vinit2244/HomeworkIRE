@@ -34,10 +34,9 @@ Make sure you add all your code as you work on it to a github repository. We sho
 Indexing is the process of organizing and structuring data to enable fast and efficient retrieval of information. In the context of information retrieval, an index allows you to quickly find documents that contain specific terms or satisfy certain queries, without scanning every document in the collection. For this assignment, you will build an index over some texts. The process involves:
 
 1. _Extracting terms_: For given text, read the text, tokenize it, remove stop word and perform stemming over resulting tokens to obtain terms.
-2. _Building an index_:
-    - _Inverted Index (Boolean index_)
-		- Build an inverted index (also known as a boolean index) that maps each term to the list of documents in which it appears.
-		- This index should support boolean queries using the operators `AND`, `OR`, `NOT`, and `PHRASE` operators, and allow the use of parentheses for grouping.
+2. _Building an index (Boolean index)_
+- Build an inverted index (also known as a boolean index) that maps each term to the list of documents in which it appears.
+- This index should support boolean queries using the operators `AND`, `OR`, `NOT`, and `PHRASE` operators, and allow the use of parentheses for grouping.
 		- Example query: `("Apple" AND "Banana") OR ("Orange" AND NOT "Grape")`
 		- _Operator Precedence_:
 			- Order of precedence from highest to lowest is `PHRASE`, `NOT` `AND`, and `OR`.
@@ -50,4 +49,3 @@ Indexing is the process of organizing and structuring data to enable fast and ef
 3. _Persistence Requirement_:
 - Your index must be persisted on disk (e.g., using files, databases, or serialization). This ensures that the index is not lost if the server stops.
 - When the server is started, your code should automatically load all previously created indices from disk, so that all indices are available without needing to rebuild them.
-- The index must only be persisted in [./index_storage](./index_storage)
