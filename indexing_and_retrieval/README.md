@@ -37,15 +37,16 @@ Indexing is the process of organizing and structuring data to enable fast and ef
 2. _Building an index (Boolean index)_
 - Build an inverted index (also known as a boolean index) that maps each term to the list of documents in which it appears.
 - This index should support boolean queries using the operators `AND`, `OR`, `NOT`, and `PHRASE` operators, and allow the use of parentheses for grouping.
-		- Example query: `("Apple" AND "Banana") OR ("Orange" AND NOT "Grape")`
-		- _Operator Precedence_:
-			- Order of precedence from highest to lowest is `PHRASE`, `NOT` `AND`, and `OR`.
-        - _Query Grammar_:
-            ```
+	- Example query: `("Apple" AND "Banana") OR ("Orange" AND NOT "Grape")`
+	- Operator Precedence: Order of precedence from highest to lowest is `PHRASE`, `NOT` `AND`, and `OR`.
+    - Query Grammar
+  
+            
             QUERY    := EXPR
             EXPR     := TERM | (EXPR) | EXPR AND EXPR | EXPR OR EXPR | NOT EXPR | PHRASE EXPR
             TERM     := a single word/term surrounded with double quotes
-			```
-3. _Persistence Requirement_:
+			
+
+3. _Persistence Requirement_
 - Your index must be persisted on disk (e.g., using files, databases, or serialization). This ensures that the index is not lost if the server stops.
 - When the server is started, your code should automatically load all previously created indices from disk, so that all indices are available without needing to rebuild them.
