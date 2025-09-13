@@ -37,7 +37,7 @@ class IndexBase(ABC):
           idx = IndexBase(core='ESIndex', info='BOOLEAN', dstore='DB1', compr='NONE', qproc='TERMatat', optim='Null')
           print (idx)
       """
-      assert base == 'ESIndex' or base == 'SelfIndex'
+      assert core in ('ESIndex', 'SelfIndex')
       long = [ IndexInfo[info], DataStore[dstore], Compression[compr], QueryProc[qproc], Optimizations[optim] ]
       short = [k.value for k in long]
       self.identifier_long = "core={}|index={}|datastore={}|compressor={}|qproc={}|optim={}".format(*[core]+long)
