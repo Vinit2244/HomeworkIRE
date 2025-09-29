@@ -1,0 +1,5 @@
+data:
+  # There is wikipedia dataset as well but it can be used directly from datasets library
+  news:
+    path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/data/news
+    type: zipped json
