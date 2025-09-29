@@ -3,3 +3,5 @@ data:
   news:
     path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/data/news
     type: zipped json
+
+output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output
