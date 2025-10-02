@@ -6,6 +6,8 @@
     - Path to datasets (you can add new datasets as well)
     > Note: If you are adding new datasets make sure to update the code accordingly for handling those datasets
 
+    - Output folder path
+
 2. Setup Environment:
 
     ```shell
@@ -30,12 +32,25 @@
 cd indexing_and_retrieval
 
 # Download the data
-python download_data.py --unzip # --unzip flag unzips the downloaded zipped folder and moves all .json files to single folder
+python download_data.py
+
+# Generate the word frequency plots (before preprocessing)
+python generate_frequency_plot.py --data_state raw # raw denotes the data has not yet been preprocessed
 
 # Preprocess the data
 python preprocess_data.py
+
+# Generate the word frequency plots again
+python generate_frequency_plot.py --data_state preprocessed # now the data has been preprocessed
 ```
 
-> Note: Output will be stored at the output folder location specified in `config.yaml` file
+#### Notes
+
+- Wikipedia dataset:
+  - Need to manually downaload the .parquet files as downloading via code was leading to corrupt files
+- Frequency Plots:
+  - Only considers the `text` section of a document
+  - Omits punctuations
+  - Case insensitive
 
 ### Activity 2 - Own simple indexing
