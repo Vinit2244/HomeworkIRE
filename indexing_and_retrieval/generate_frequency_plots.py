@@ -36,21 +36,20 @@ def plot_frequency_distribution(freq_dict: Dict[str, int], k: int, title: str, x
 
 # ========================= MAIN =========================
 def main(args) -> None:
-    # Create instances of dataset handler classes
-    news_dataset_handler = NewsDataset()
-    wikipedia_dataset_handler = WikipediaDataset()
-
     # Load configuration
     config: dict = utils.load_config()
     top_k_threshold: int = config["top_k_threshold"]
     output_folder_path: str = config["output_folder_path"]
     os.makedirs(output_folder_path, exist_ok=True)
 
+
     # News Dataset
     print(f"{style.FG_CYAN}Calculating word frequency for news dataset...{style.RESET}")
     news_data_path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
-    news_data_freq_dist: dict = news_dataset_handler.calculate_word_frequency(news_data_path, unzipped)
+
+    news_dataset_handler = NewsDataset(news_data_path, unzipped)
+    news_data_freq_dist: dict = news_dataset_handler.calculate_word_frequency()
     plot_frequency_distribution(news_data_freq_dist,
                                 top_k_threshold,
                                 "Word Frequency Distribution for News Dataset",
@@ -59,10 +58,13 @@ def main(args) -> None:
                                 os.path.join(output_folder_path, f"news_word_frequency_{args.data_state}_top_{top_k_threshold}.png"))
     print(f"{style.FG_GREEN}Frequency plot for news dataset saved at {output_folder_path}\n{style.RESET}")
 
+
     # Wikipedia Dataset
     print(f"{style.FG_CYAN}Calculating word frequency for wikipedia dataset...{style.RESET}")
     wikipedia_data_path: str = config["data"]["wikipedia"]["path"]
-    wikipedia_data_freq_dist: dict = wikipedia_dataset_handler.calculate_word_frequency(wikipedia_data_path)
+
+    wikipedia_dataset_handler = WikipediaDataset(wikipedia_data_path)
+    wikipedia_data_freq_dist: dict = wikipedia_dataset_handler.calculate_word_frequency()
     plot_frequency_distribution(wikipedia_data_freq_dist,
                                 top_k_threshold,
                                 "Word Frequency Distribution for Wikipedia Dataset",
