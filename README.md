@@ -35,13 +35,15 @@ cd indexing_and_retrieval
 python download_data.py
 
 # Generate the word frequency plots (before preprocessing)
-python generate_frequency_plot.py --data_state raw # raw denotes the data has not yet been preprocessed
+python generate_frequency_plots.py --data_state raw # raw denotes the data has not yet been preprocessed
+
+# Update the preprocessing settings in the config.yaml file before applying preprocessing
 
 # Preprocess the data
 python preprocess_data.py
 
 # Generate the word frequency plots again
-python generate_frequency_plot.py --data_state preprocessed # now the data has been preprocessed
+python generate_frequency_plots.py --data_state preprocessed # now the data has been preprocessed
 ```
 
 #### Notes

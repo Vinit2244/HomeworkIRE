@@ -6,5 +6,17 @@ data:
   wikipedia:
     path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/data/wikipedia
 
+preprocessing:
+  stopwords:
+    languages: [english] # List of languages for stopword removal. Empty list means no stopword removal
+  stemming:
+    algorithm: porter # porter, lancaster, snowball, null (no stemming)
+  lemmatization:
+    algorithm: wordnet # wordnet, null (no lemmatization)
+  lowercase: true
+  remove_punctuation: true
+  remove_numbers: true
+  remove_special_characters: true
+
 top_k_threshold: 50 # Top K words to be plotted in frequency distribution plots
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output
