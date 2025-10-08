@@ -8,7 +8,7 @@ data:
 
 preprocessing:
   stopwords:
-    languages: [english] # List of languages for stopword removal. Empty list means no stopword removal
+    languages: [auto, english] # List of languages for stopword removal. Empty list means no stopword removal. "auto" means it will automatically look for language tag in the data file itself
   stemming:
     algorithm: porter # porter, lancaster, snowball, null (no stemming)
   lemmatization:
@@ -18,5 +18,6 @@ preprocessing:
   remove_numbers: true
   remove_special_characters: true
 
-top_k_threshold: 50 # Top K words to be plotted in frequency distribution plots
+max_num_documents: 5000 # Maximum number of documents to be processed from each dataset. Set to null to process all documents
+top_k_words_threshold: 50 # Top K words to be plotted in frequency distribution plots
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output

@@ -1,9 +1,8 @@
 # ======================== IMPORTS ========================
 import utils
 from utils import style
-from preprocessor import Preprocessor
-from dataset_handlers import NewsDataset, WikipediaDataset
 from typing import List
+from dataset_handlers import NewsDataset, WikipediaDataset
 
 
 # ======================= FUNCTIONS =======================
@@ -23,17 +22,19 @@ def preprocess_data(config: dict) -> None:
     lemmatization_algo: str | None       = config["preprocessing"]["lemmatization"]["algorithm"]
     lemmatize         : bool             = True if lemmatization_algo else False
 
+    max_num_documents: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+
     print(f"{style.FG_CYAN}Preprocessing news dataset...{style.RESET}")
     path_to_news_dataset: str = config["data"]["news"]["path"]
     unzip: bool = config["data"]["news"]["unzip"]
-    NewsDataset(path_to_news_dataset, unzip).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
+    NewsDataset(path_to_news_dataset, max_num_documents, unzip).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
                              rem_num, rem_special, stem, stemming_algo,
                              lemmatize, lemmatization_algo)
     print(f"{style.FG_GREEN}Preprocessing of news dataset completed.\n{style.RESET}")
 
     print(f"{style.FG_CYAN}Preprocessing wikipedia dataset...{style.RESET}")
     path_to_wikipedia_dataset: str = config["data"]["wikipedia"]["path"]
-    WikipediaDataset(path_to_wikipedia_dataset).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
+    WikipediaDataset(path_to_wikipedia_dataset, max_num_documents).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
                              rem_num, rem_special, stem, stemming_algo,
                              lemmatize, lemmatization_algo)
     print(f"{style.FG_GREEN}Preprocessing of wikipedia dataset completed.\n{style.RESET}")

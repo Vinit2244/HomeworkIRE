@@ -30,8 +30,9 @@ class Dataset(ABC):
 
 
 class NewsDataset(Dataset):
-    def __init__(self, data_path: str, unzipped: bool) -> None:
+    def __init__(self, data_path: str, max_num_docs: int, unzipped: bool) -> None:
         self.data_path = data_path
+        self.max_num_docs = max_num_docs
         self.unzipped = unzipped
         pass
 
@@ -51,6 +52,8 @@ class NewsDataset(Dataset):
                         all_json_files_paths.append(os.path.join(folder_path, json_file))
             
             # Fet total number of files (to use in tqdm progress bar)
+            if self.max_num_docs != -1:
+                all_json_files_paths = all_json_files_paths[:self.max_num_docs]
             total_files = len(all_json_files_paths)
             yield total_files
 
@@ -75,6 +78,8 @@ class NewsDataset(Dataset):
                             all_json_entries.append((zip_path, json_file))
 
             # Fet total number of files (to use in tqdm progress bar)
+            if self.max_num_docs != -1:
+                all_json_entries = all_json_entries[:self.max_num_docs]
             total_files = len(all_json_entries)
             yield total_files
 
@@ -165,8 +170,22 @@ class NewsDataset(Dataset):
             if lowercase:
                 text = preprocessor.lowercase(text)
             if rem_stop:
-                for lang in stopword_langs:
-                    text = preprocessor.remove_stopwords(text, lang)
+                if "auto" in stopword_langs:
+                    try:
+                        lang: str = data["language"]
+                        text = preprocessor.remove_stopwords(text, lang)
+                    except:
+                        # If language tag not found, skip "auto" and use other specified languages
+                        for lang in stopword_langs:
+                            if lang.strip().lower() == "auto":
+                                continue
+                            text = preprocessor.remove_stopwords(text, lang)
+                else:
+                    # Use all specified languages (no "auto")
+                    for lang in stopword_langs:
+                        if lang.strip().lower() == "auto":
+                            continue
+                        text = preprocessor.remove_stopwords(text, lang)
             if rem_punc or rem_num or rem_special:
                 text = preprocessor.remove(text, rem_punc, rem_num, rem_special)
             if stem:
@@ -181,8 +200,9 @@ class NewsDataset(Dataset):
 
 
 class WikipediaDataset(Dataset):
-    def __init__(self, data_path: str) -> None:
+    def __init__(self, data_path: str, max_num_docs: int) -> None:
         self.data_path = data_path
+        self.max_num_docs = max_num_docs
         pass
 
     # Public functions
@@ -197,16 +217,27 @@ class WikipediaDataset(Dataset):
 
         # Fet total number of rows across all files (to use in tqdm progress bar)
         total_rows = sum(pd.read_parquet(os.path.join(self.data_path, f), engine='pyarrow').shape[0] for f in wikipedia_parquet_files)
+
+        if self.max_num_docs != -1:
+            total_rows = min(total_rows, self.max_num_docs)
         
+        curr_row_count = 0
         with tqdm(total=total_rows, desc="Calculating word frequencies") as pbar:
             for parquet_file in wikipedia_parquet_files:
+                break_flag = False
                 parquet_file_path: str = os.path.join(self.data_path, parquet_file)
                 df = pd.read_parquet(parquet_file_path, engine='pyarrow')
                 for text in df["text"]:
+                    if curr_row_count == self.max_num_docs:
+                        break_flag = True
+                        break
                     item_freq = utils.get_word_freq_dist(text)
                     for word, count in item_freq.items():
                         freq[word] += count
                     pbar.update(1)  # update progress bar for each row
+                    curr_row_count += 1
+                if break_flag:
+                    break
         return freq
 
     def preprocess(self, lowercase: bool, rem_stop: bool, stopword_langs: List[str], rem_punc: bool, rem_num: bool, rem_special: bool, stem: bool, stemming_algo: str, lemmatize: bool, lemmatization_algo: str) -> None:
@@ -217,17 +248,30 @@ class WikipediaDataset(Dataset):
         # Fet total number of rows across all files (to use in tqdm progress bar)
         total_rows = sum(pd.read_parquet(os.path.join(self.data_path, f), engine='pyarrow').shape[0] for f in wikipedia_parquet_files)
         
+        if self.max_num_docs != -1:
+            total_rows = min(total_rows, self.max_num_docs)
+
+        curr_row_count = 0
         preprocessor = Preprocessor()
         with tqdm(total=total_rows, desc="Preprocessing text") as pbar:
             for parquet_file in wikipedia_parquet_files:
+                break_flag = False
                 parquet_file_path: str = os.path.join(self.data_path, parquet_file)
                 df = pd.read_parquet(parquet_file_path, engine='pyarrow')
                 processed_texts = []
                 for text in df["text"]:
+                    if curr_row_count == self.max_num_docs:
+                        # Append remaining unprocessed texts as is and break out
+                        break_flag = True
+                        remaining_texts = df["text"].iloc[len(processed_texts):].tolist()
+                        processed_texts.extend(remaining_texts)
+                        break
                     if lowercase:
                         text = preprocessor.lowercase(text)
                     if rem_stop:
                         for lang in stopword_langs:
+                            if lang.strip().lower() == "auto":
+                                continue
                             text = preprocessor.remove_stopwords(text, lang)
                     if rem_punc or rem_num or rem_special:
                         text = preprocessor.remove(text, rem_punc, rem_num, rem_special)
@@ -238,10 +282,14 @@ class WikipediaDataset(Dataset):
 
                     processed_texts.append(text)
                     pbar.update(1)
+                    curr_row_count += 1
 
                 # Update dataframe with processed text
                 df["text"] = processed_texts
 
                 # Overwrite same parquet file (or change filename if you want to keep original)
                 df.to_parquet(parquet_file_path, index=False, engine='pyarrow')
+
+                if break_flag:
+                    break
         return freq
