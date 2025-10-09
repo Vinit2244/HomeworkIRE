@@ -6,9 +6,9 @@ import zipfile
 import subprocess
 from tqdm import tqdm
 from utils import style
-from typing import List
 from .dataset_base import Dataset
 from collections import defaultdict
+from typing import List, Tuple, Generator
 
 
 # ======================== CLASSES ========================
@@ -182,3 +182,23 @@ class NewsDataset(Dataset):
             # Write back to file (overwriting original content)
             with open(f.name, 'w') as out_f:
                 json.dump(data, out_f)
+
+    def get_files(self, attributes: List[str]) -> Generator[Tuple[str, dict], None, None]:
+        for f in self._file_iterator():
+            # Ignoring the first value which is the total count
+            if type(f) is int:
+                continue
+            data = json.load(f)
+
+            try:
+                # Assuming first attribute is always unique identifier
+                uuid = str(data[attributes[0]])
+                payload = {attr: data[attr] for attr in attributes[1:]}
+                
+                # Returning a dict so that we can easily extend it in future if needed
+                file_info = (uuid, payload)
+            except KeyError as e:
+                print(f"{style.FG_RED}Warning: Attribute {e} not found in file {f.name}. Skipping this file.{style.RESET}")
+                continue
+            
+            yield file_info

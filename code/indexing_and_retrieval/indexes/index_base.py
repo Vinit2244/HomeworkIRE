@@ -1,51 +1,58 @@
+# ======================== IMPORTS ========================
 from enum import Enum
 from typing import Iterable
 from abc import ABC, abstractmethod
 
-# Identifier enums for variants for index
-# Tailor to add specifics that are implemented
+
+# ========================= ENUMS =========================
 class IndexInfo(Enum):
     BOOLEAN = 1
     WORDCOUNT = 2
     TFIDF = 3
+
 class DataStore(Enum):
     CUSTOM = 1
-    DB1 = 2
-    DB2 = 3
+    POSTGRESQL = 2
+    REDIS = 3
+
 class Compression(Enum):
     NONE = 1
     CODE = 2
     CLIB = 3
-class QueryProc(Enum):
-    TERMatat = 'T'
-    DOCatat = 'D'
+
 class Optimizations(Enum):
-    Null = '0'
-    Skipping = 'sp'
-    Thresholding = 'th'
-    EarlyStopping = 'es'
-  
+    NONE = '0'
+    SKIPPING = 'sp'
+    THRESHOLDING = 'th'
+    EARLYSTOPPING = 'es'
+
+class QueryProc(Enum):
+    TERM = 'T'
+    DOC = 'D'
+
+
+# ====================== BASE CLASS =======================
 class IndexBase(ABC):
     """
     Base index class with abstract methods to inherit for specific implementations.
     """
-    def __init__(self, core, info, dstore, qproc, compr, optim):
-      """
-      Sample usage:
-          idx = IndexBase(core='ESIndex', info='BOOLEAN', dstore='DB1', compr='NONE', qproc='TERMatat', optim='Null')
-          print (idx)
-      """
-      assert core in ('ESIndex', 'SelfIndex')
-      long = [ IndexInfo[info], DataStore[dstore], Compression[compr], QueryProc[qproc], Optimizations[optim] ]
-      short = [k.value for k in long]
-      self.identifier_long = "core={}|index={}|datastore={}|compressor={}|qproc={}|optim={}".format(*[core]+long)
-      self.identifier_short = "{}_i{}d{}c{}q{}o{}".format(*[core]+short)
-        
+    def __init__(self: str, core: str, info: str, dstore: str, qproc: str, compr: str, optim: str) -> None:
+        """
+        Sample usage:
+            idx = IndexBase(core='ESIndex', info='BOOLEAN', dstore='CUSTOM', compr='NONE', qproc='TERM', optim='NONE)
+            print (idx)
+        """
+        assert core in ('ESIndex', 'CustomIndex')
+        long = [IndexInfo[info], DataStore[dstore], Compression[compr], QueryProc[qproc], Optimizations[optim]]
+        short = [k.value for k in long]
+        self.identifier_long = "core={}|index={}|datastore={}|compressor={}|qproc={}|optim={}".format(*[core]+long)
+        self.identifier_short = "{}_i{}d{}c{}q{}o{}".format(*[core]+short)
+
     def __repr__(self):
         return f"{self.identifier_short}: {self.identifier_long}"
-      
+
     @abstractmethod
-    def create_index(index_id: str, files: Iterable[tuple[str, str]]) -> None: 
+    def create_index(index_id: str, files: Iterable[tuple[str, dict]]) -> None: 
         """Creates and index for the given files
         Args:
             index_id: The unique identifier for the index.
@@ -62,7 +69,7 @@ class IndexBase(ABC):
             json.dump(data, f)
         '''
         pass
-            
+
     @abstractmethod
     def load_index(serialized_index_dump: str) -> None:
         """Loads an already created index into memory from disk.
@@ -70,7 +77,7 @@ class IndexBase(ABC):
             serialized_index_dump: Path to dump of serialized index
         """
         pass
-        
+
     @abstractmethod
     def update_index(index_id: str, remove_files: Iterable[tuple[str, str]], add_files: Iterable[tuple[str, str]]) -> None:
         """Updates an index. First removes files from the index, then adds files to the index.
@@ -90,13 +97,13 @@ class IndexBase(ABC):
             results: Output json str with results
         """
         pass
-  
+
     @abstractmethod
     def delete_index(index_id: str) -> None:
         """Deletes the index with the given index_id."""
         # Remove index files from disk
         pass
-  
+
     @abstractmethod
     def list_indices() -> Iterable[str]:
         """Lists all indices.
@@ -105,7 +112,7 @@ class IndexBase(ABC):
             An iterable (list) of index ids.
         """
         pass
-  
+
     @abstractmethod
     def list_indexed_files(index_id: str) -> Iterable[str]:
         """Lists all files indexed in the given index.

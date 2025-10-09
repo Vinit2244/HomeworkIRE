@@ -47,6 +47,8 @@
     curl -fsSL https://elastic.co/start-local | sh
 
     # Please copy the generated username, password and API key and store them in .env file.
+
+    # To stop the container once done: docker stop kibana-local-dev && docker stop es-local-dev
     ```
 
 ---

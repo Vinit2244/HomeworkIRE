@@ -21,8 +21,21 @@ preprocessing:
 elasticsearch:
   host: localhost
   port: 9200
-  index_name: ESIndex-v1.0
+  scheme: http     # https for secure connection, http for local connection
 
-max_num_documents: 5000 # Maximum number of documents to be processed from each dataset. Set to null to process all documents
+index:
+  core: ESIndex    # Options: "ESIndex" (Elasticsearch), "CustomIndex" (Custom Index)
+  dataset: news    # Options: "news" (News Dataset), "wiki" (Wikipedia Dataset)
+
+# NOTE: !!!!!! PLEASE ALWAYS KEEP THE UNIQUE ID AS THE FIRST ATTRIBUTE IN THE LIST !!!!!!
+  attributes: [uuid, text] # Attributes to be indexed from the dataset (Make sure to keep the unique id as first attribute)
+  
+  info: BOOLEAN    # Kind of information indexed: BOOLEAN, WORDCOUNT or TFIDF
+  dstore: CUSTOM   # Datastore choice: CUSTOM, POSTGRESQL or REDIS
+  compr: NONE      # Compression choice: NONE, CODE or CLIB
+  optim: NONE      # Optimisation choice: NONE, SKIPPING, THRESHOLDING or EARLYSTOPPING
+  qproc: TERM      # Query Processing choice: TERM or DOC
+
+max_num_documents: 5000   # Maximum number of documents to be processed from each dataset. Set to null to process all documents
 top_k_words_threshold: 50 # Top K words to be plotted in frequency distribution plots
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output
