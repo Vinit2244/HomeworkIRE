@@ -3,6 +3,8 @@ import yaml
 from typing import List
 from collections import defaultdict
 
+CONFIG_FILE_PATH: str = "../../config.yaml"
+
 
 # ======================== CLASSES ========================
 class Style:
@@ -43,7 +45,7 @@ def load_config() -> dict:
     '''
     Returns the configuration from config.yaml file as a dictionary.
     '''
-    with open("../config.yaml", 'r') as f:
+    with open(CONFIG_FILE_PATH, 'r') as f:
         config = yaml.safe_load(f)
     return config
 

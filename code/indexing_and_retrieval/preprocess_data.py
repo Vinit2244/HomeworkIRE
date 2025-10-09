@@ -2,7 +2,7 @@
 import utils
 from utils import style
 from typing import List
-from dataset_handlers import NewsDataset, WikipediaDataset
+from dataset_managers import NewsDataset, WikipediaDataset
 
 
 # ======================= FUNCTIONS =======================

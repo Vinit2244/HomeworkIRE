@@ -1,21 +1,10 @@
 # ======================== IMPORTS ========================
 import nltk
-import ssl
-
-# --- Fix SSL verification issue while downloading stopwords and wordnet ---
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
 
 
 # ======================== CLASSES ========================
 class Preprocessor:
     def __init__(self) -> None:
-        nltk.download('stopwords')
-        nltk.download('wordnet')
         pass
 
     def lowercase(self, text: str) -> str:

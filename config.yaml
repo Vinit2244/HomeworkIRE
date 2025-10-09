@@ -18,6 +18,11 @@ preprocessing:
   remove_numbers: true
   remove_special_characters: true
 
+elasticsearch:
+  host: localhost
+  port: 9200
+  index_name: ESIndex-v1.0
+
 max_num_documents: 5000 # Maximum number of documents to be processed from each dataset. Set to null to process all documents
 top_k_words_threshold: 50 # Top K words to be plotted in frequency distribution plots
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output

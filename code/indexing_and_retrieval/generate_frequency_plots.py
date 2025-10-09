@@ -5,7 +5,7 @@ import argparse
 from utils import style
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Dict
-from dataset_handlers import NewsDataset, WikipediaDataset
+from dataset_managers import NewsDataset, WikipediaDataset
 
 
 # ======================= FUNCTIONS =======================

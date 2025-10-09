@@ -1,0 +1,10 @@
+[
+    {
+        "query": "What is the capital of France?",
+        "docs": "Paris"
+    },
+    {
+        "query": "Who wrote 'To Kill a Mockingbird'?",
+        "docs": "Harper Lee"
+    }
+]
