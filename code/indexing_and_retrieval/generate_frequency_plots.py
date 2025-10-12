@@ -2,7 +2,7 @@
 import os
 import utils
 import argparse
-from utils import style
+from utils import Style
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Dict
 from dataset_managers import NewsDataset, WikipediaDataset
@@ -45,7 +45,7 @@ def main(args) -> None:
 
 
     # News Dataset
-    print(f"{style.FG_CYAN}Calculating word frequency for news dataset...{style.RESET}")
+    print(f"{Style.FG_CYAN}Calculating word frequency for news dataset...{Style.RESET}")
     news_data_path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
 
@@ -57,11 +57,11 @@ def main(args) -> None:
                                 "Words",
                                 "Frequencies",
                                 os.path.join(output_folder_path, f"news_word_frequency_{args.data_state}_top_{top_k_words_threshold}.png"))
-    print(f"{style.FG_GREEN}Frequency plot for news dataset saved at {output_folder_path}\n{style.RESET}")
+    print(f"{Style.FG_GREEN}Frequency plot for news dataset saved at {output_folder_path}\n{Style.RESET}")
 
 
     # Wikipedia Dataset
-    print(f"{style.FG_CYAN}Calculating word frequency for wikipedia dataset...{style.RESET}")
+    print(f"{Style.FG_CYAN}Calculating word frequency for wikipedia dataset...{Style.RESET}")
     wikipedia_data_path: str = config["data"]["wikipedia"]["path"]
 
     wikipedia_dataset_handler = WikipediaDataset(wikipedia_data_path, max_num_documents)
@@ -72,7 +72,7 @@ def main(args) -> None:
                                 "Words",
                                 "Frequencies",
                                 os.path.join(output_folder_path, f"wikipedia_word_frequency_{args.data_state}_top_{top_k_words_threshold}.png"))
-    print(f"{style.FG_GREEN}Frequency plot for wikipedia dataset saved at {output_folder_path}\n{style.RESET}")
+    print(f"{Style.FG_GREEN}Frequency plot for wikipedia dataset saved at {output_folder_path}\n{Style.RESET}")
 
 
 if __name__ == "__main__":

@@ -1,2 +1,2 @@
-from .dataset_news import NewsDataset
-from .dataset_wikipedia import WikipediaDataset
+from .dataset_news import NewsDataset, get_news_dataset_handler
+from .dataset_wikipedia import WikipediaDataset, get_wikipedia_dataset_handler

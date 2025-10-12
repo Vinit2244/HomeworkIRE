@@ -3,10 +3,10 @@ import os
 import utils
 import pandas as pd
 from tqdm import tqdm
-from utils import style
 from typing import List
 from .dataset_base import Dataset
 from collections import defaultdict
+from utils import Style, load_config
 
 
 # ======================== CLASSES ========================
@@ -19,7 +19,7 @@ class WikipediaDataset(Dataset):
     # Public functions
     def download_dataset(self) -> None:
         os.makedirs(self.data_path, exist_ok=True)
-        print(f"{style.FG_RED + style.BG_YELLOW + style.BOLD}Manually download .parquet files of wikipedia dataset from https://huggingface.co/datasets/wikimedia/wikipedia/tree/main and save the files at {self.data_path}{style.RESET}")
+        print(f"{Style.FG_RED + Style.BG_YELLOW + Style.BOLD}Manually download .parquet files of wikipedia dataset from https://huggingface.co/datasets/wikimedia/wikipedia/tree/main and save the files at {self.data_path}{Style.RESET}")
 
     def calculate_word_frequency(self) -> dict:
         # Find all the .parquet files in the given directory
@@ -106,3 +106,13 @@ class WikipediaDataset(Dataset):
                 if break_flag:
                     break
         return freq
+
+
+# ================== HELPER FUNCTIONS ====================
+def get_wikipedia_dataset_handler() -> WikipediaDataset:
+    config = load_config()
+    
+    data_path: str = config["data"]["wikipedia"]["path"]
+    max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+    
+    return WikipediaDataset(data_path, max_num_docs)

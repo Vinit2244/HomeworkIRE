@@ -6,11 +6,13 @@ from abc import ABC, abstractmethod
 
 # ========================= ENUMS =========================
 class IndexInfo(Enum):
+    NONE = 0 # Just a placeholder
     BOOLEAN = 1
     WORDCOUNT = 2
     TFIDF = 3
 
 class DataStore(Enum):
+    NONE = 0 # Just a placeholder
     CUSTOM = 1
     POSTGRESQL = 2
     REDIS = 3
@@ -27,6 +29,7 @@ class Optimizations(Enum):
     EARLYSTOPPING = 'es'
 
 class QueryProc(Enum):
+    NONE = '0' # Just a placeholder
     TERM = 'T'
     DOC = 'D'
 

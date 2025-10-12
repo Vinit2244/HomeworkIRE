@@ -5,7 +5,7 @@ import utils
 import zipfile
 import subprocess
 from tqdm import tqdm
-from utils import style
+from utils import Style, load_config
 from .dataset_base import Dataset
 from collections import defaultdict
 from typing import List, Tuple, Generator
@@ -73,7 +73,7 @@ class NewsDataset(Dataset):
                         yield f
 
     def _unzip_and_clean_dataset(self) -> None:
-        print(f"{style.FG_CYAN}Unzipping and cleaning news dataset...{style.RESET}")
+        print(f"{Style.FG_CYAN}Unzipping and cleaning news dataset...{Style.RESET}")
 
         # Remove all the files except the "News_Datasets" folder
         all_items: list = os.listdir(self.data_path)
@@ -98,13 +98,13 @@ class NewsDataset(Dataset):
                     os.remove(folder_path)
                 except:
                     subprocess.run(["rm", "-rf", folder_path], check=True)
-        print(f"{style.FG_GREEN}Unzipped {unzipped_count}/{len(all_zipped_folders)}{style.RESET}")
+        print(f"{Style.FG_GREEN}Unzipped {unzipped_count}/{len(all_zipped_folders)}{Style.RESET}")
 
-        print(f"{style.FG_GREEN}News dataset unzipped and cleaned at {self.data_path}\n{style.RESET}")
+        print(f"{Style.FG_GREEN}News dataset unzipped and cleaned at {self.data_path}\n{Style.RESET}")
 
     # Public functions
     def download_dataset(self) -> None:
-        print(f"{style.FG_CYAN}Downloading news dataset...{style.RESET}")
+        print(f"{Style.FG_CYAN}Downloading news dataset...{Style.RESET}")
 
         # Make sure the destination directory exists
         os.makedirs(self.data_path, exist_ok=True)
@@ -114,10 +114,10 @@ class NewsDataset(Dataset):
         subprocess.run(["git", "clone", repo_url, self.data_path], check=True)
 
         if self.unzipped:
-            print(f"{style.FG_CYAN}Unzipping and cleaning news dataset...{style.RESET}")
+            print(f"{Style.FG_CYAN}Unzipping and cleaning news dataset...{Style.RESET}")
             self._unzip_and_clean_dataset()
 
-        print(f"{style.FG_GREEN}News dataset downloaded at {self.data_path}\n{style.RESET}")
+        print(f"{Style.FG_GREEN}News dataset downloaded at {self.data_path}\n{Style.RESET}")
 
     def calculate_word_frequency(self) -> dict:
         freq: dict = defaultdict(int)
@@ -198,7 +198,18 @@ class NewsDataset(Dataset):
                 # Returning a dict so that we can easily extend it in future if needed
                 file_info = (uuid, payload)
             except KeyError as e:
-                print(f"{style.FG_RED}Warning: Attribute {e} not found in file {f.name}. Skipping this file.{style.RESET}")
+                print(f"{Style.FG_RED}Warning: Attribute {e} not found in file {f.name}. Skipping this file.{Style.RESET}")
                 continue
             
             yield file_info
+
+
+# ================== HELPER FUNCTIONS ====================
+def get_news_dataset_handler() -> NewsDataset:
+    config: dict = load_config()
+
+    path: str = config["data"]["news"]["path"]
+    unzipped: bool = config["data"]["news"]["unzip"]
+    max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+
+    return NewsDataset(path, max_num_docs, unzipped)

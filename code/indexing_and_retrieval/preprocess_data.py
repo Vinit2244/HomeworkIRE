@@ -1,6 +1,6 @@
 # ======================== IMPORTS ========================
 import utils
-from utils import style
+from utils import Style
 from typing import List
 from dataset_managers import NewsDataset, WikipediaDataset
 
@@ -24,20 +24,20 @@ def preprocess_data(config: dict) -> None:
 
     max_num_documents: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
 
-    print(f"{style.FG_CYAN}Preprocessing news dataset...{style.RESET}")
+    print(f"{Style.FG_CYAN}Preprocessing news dataset...{Style.RESET}")
     path_to_news_dataset: str = config["data"]["news"]["path"]
     unzip: bool = config["data"]["news"]["unzip"]
     NewsDataset(path_to_news_dataset, max_num_documents, unzip).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
                              rem_num, rem_special, stem, stemming_algo,
                              lemmatize, lemmatization_algo)
-    print(f"{style.FG_GREEN}Preprocessing of news dataset completed.\n{style.RESET}")
+    print(f"{Style.FG_GREEN}Preprocessing of news dataset completed.\n{Style.RESET}")
 
-    print(f"{style.FG_CYAN}Preprocessing wikipedia dataset...{style.RESET}")
+    print(f"{Style.FG_CYAN}Preprocessing wikipedia dataset...{Style.RESET}")
     path_to_wikipedia_dataset: str = config["data"]["wikipedia"]["path"]
     WikipediaDataset(path_to_wikipedia_dataset, max_num_documents).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
                              rem_num, rem_special, stem, stemming_algo,
                              lemmatize, lemmatization_algo)
-    print(f"{style.FG_GREEN}Preprocessing of wikipedia dataset completed.\n{style.RESET}")
+    print(f"{Style.FG_GREEN}Preprocessing of wikipedia dataset completed.\n{Style.RESET}")
 
 
 # ========================= MAIN ==========================
