@@ -38,24 +38,34 @@
 3. Start docker deamon:
 
     ```shell
-    sudo dockerd # Or open using desktop app
+    sudo dockerd # or open using desktop app
     ```
 
-4. Create a local development installation of elasticsearch using docker:
+4. Download a local development installation of elasticsearch using docker:
 
     ```shell
     curl -fsSL https://elastic.co/start-local | sh
 
     # Please copy the generated username, password and API key and store them in .env file.
-
-    # To stop the container once done: docker stop kibana-local-dev && docker stop es-local-dev
     ```
+
+To start the container if already exists:
+
+```shell
+docker start es-local-dev && docker start kibana-local-settings && docker start kibana-local-dev
+```
+
+To stop the container once done:
+
+```shell
+docker stop kibana-local-dev && docker stop es-local-dev
+```
 
 ---
 
 ## Assignment 1 - Indexing and Retrieval
 
-### Activity 1 - Preprocess data
+### Activity 1 - Preprocess data & Index News/Wikipedia Dataset in Elasticsearch
 
 ```shell
 # Move into the `indexing_and_retrieval` folder
@@ -74,6 +84,9 @@ python3 preprocess_data.py
 
 # Generate the word frequency plots again
 python3 generate_frequency_plots.py --data_state preprocessed # now the data has been preprocessed
+
+# Index News & Wikipedia Data in elasticsearch
+python3 index_data.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
 ```
 
 #### Notes
