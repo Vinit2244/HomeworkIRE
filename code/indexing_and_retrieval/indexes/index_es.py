@@ -1,5 +1,6 @@
 # ======================== IMPORTS ========================
 import os
+import json
 import inspect
 from typing import Iterable
 from dotenv import load_dotenv
@@ -50,7 +51,6 @@ class ESIndex(BaseIndex):
             return index_info
         
         except Exception as e:
-            print(f"{Style.FG_RED}Failed to get index info: {e}{Style.RESET}")
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def list_indices(self) -> Iterable[str]:
@@ -97,14 +97,44 @@ class ESIndex(BaseIndex):
         else:
             return StatusCode.INDEXING_FAILED
 
-    def load_index(self, serialized_index_dump: str) -> None:
-        ...
+    def load_index(self, index_id: str) -> StatusCode:
+        # Loading index in Elasticsearch is not required as it manages indices internally
+        index_exists = self.get_index_info(index_id)
+        if isinstance(index_exists, StatusCode):
+            return index_exists
+        return StatusCode.SUCCESS
 
-    def update_index(self, index_id: str, remove_files: Iterable[tuple[str, str]], add_files: Iterable[tuple[str, str]]) -> None:
-        ...
+    def update_index(self, index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, dict]]) -> StatusCode:
+        if remove_files:
+            print(f"{Style.FG_YELLOW}Removing {len(remove_files)} files from index '{index_id}'...{Style.RESET}")
+            for uuid in remove_files:
+                try:
+                    self.es_client.delete(index=index_id, id=uuid)
+                except Exception as e:
+                    return StatusCode.FAILED_TO_REMOVE_FILE
+            
+        if add_files:
+            print(f"{Style.FG_YELLOW}Adding {len(add_files)} files to index '{index_id}'...{Style.RESET}")
+            status = self.create_index(index_id, add_files)
+            if status != StatusCode.SUCCESS:
+                return status
+            
+        return StatusCode.SUCCESS
 
-    def query(self, query: str) -> str:
-        ...
+    def query(self, query: str, index_id: str=None) -> str:
+        if index_id is None or index_id.strip() == "":
+            index_id = "*"  # Search across all indices if no specific index is provided
+
+        res = self.es_client.search(
+            index=index_id,
+            query={
+                "query_string": {
+                    "query": query
+                }
+            }
+        )
+
+        return json.dumps(res.body, indent=2)
 
     def delete_index(self, index_id: str) -> StatusCode:
         res = self.es_client.indices.delete(index=index_id.lower())

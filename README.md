@@ -86,7 +86,7 @@ python3 preprocess_data.py
 python3 generate_frequency_plots.py --data_state preprocessed # now the data has been preprocessed
 
 # Index News & Wikipedia Data in elasticsearch
-python3 index_data.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
+python3 main.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
 ```
 
 #### Notes

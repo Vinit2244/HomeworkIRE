@@ -78,19 +78,19 @@ class BaseIndex(ABC):
         pass
 
     @abstractmethod
-    def load_index(serialized_index_dump: str) -> None:
+    def load_index(index_id: str) -> None:
         """Loads an already created index into memory from disk.
         Args:
-            serialized_index_dump: Path to dump of serialized index
+            index_id: Id of the index to load
         """
         pass
 
     @abstractmethod
-    def update_index(index_id: str, remove_files: Iterable[tuple[str, str]], add_files: Iterable[tuple[str, str]]) -> None:
+    def update_index(index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, str]]) -> None:
         """Updates an index. First removes files from the index, then adds files to the index.
         Args:
             index_id: The unique identifier for the index.
-            remove_files: An iterable (list-like object) of tuples, where each tuple contains the file id and its content to be removed.
+            remove_files: An iterable (list-like object) of the file ids to be removed.
             add_files: An iterable (list-like object) of tuples, where each tuple contains the file id and its content to be added.
         """
         pass

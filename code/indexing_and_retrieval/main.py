@@ -79,6 +79,37 @@ def generate_index_id(core: str, dataset: str, version: str="v1.0") -> str:
     return (core + "-" + version + "-" + dataset).lower()  # Elasticsearch index names must be lowercase
 
 
+def pretty_print_query_results(results_json: str) -> None:
+    try:
+        results = json.loads(results_json)
+        hits = results.get("hits", {}).get("hits", [])
+        total = results.get("hits", {}).get("total", {}).get("value", len(hits))
+
+        print(f"\n{Style.FG_CYAN}{Style.BOLD}Search Results{Style.RESET}")
+        print(f"{Style.FG_CYAN}{'='*60}{Style.RESET}")
+        print(f"{Style.FG_YELLOW}Total hits:{Style.RESET} {total}\n")
+
+        if not hits:
+            print(f"{Style.FG_RED}No matching documents found.{Style.RESET}")
+            return
+
+        for i, hit in enumerate(hits, start=1):
+            print(f"{Style.FG_MAGENTA}{Style.BOLD}Result #{i}{Style.RESET}")
+            print(f"{Style.FG_CYAN}{'-'*60}{Style.RESET}")
+            print(f"{Style.FG_BLUE}Index :{Style.RESET} {hit.get('_index', 'N/A')}")
+            print(f"{Style.FG_BLUE}ID    :{Style.RESET} {hit.get('_id', 'N/A')}")
+            print(f"{Style.FG_BLUE}Score :{Style.RESET} {hit.get('_score', 'N/A')}")
+
+            source = hit.get("_source", {})
+            for key, value in source.items():
+                print(f"{Style.FG_GREEN}{key.capitalize():<6}:{Style.RESET} {value}")
+            
+            print(f"{Style.FG_CYAN}{'-'*60}{Style.RESET}\n")
+
+    except Exception as e:
+        print(f"{Style.FG_RED}Error parsing results.{Style.RESET}")
+
+
 # ======================= FUNCTIONS =======================
 def menu() -> None:
     global settings
@@ -126,7 +157,8 @@ def menu() -> None:
             print(f"{Style.FG_CYAN}3. List Indices{Style.RESET}")
             print(f"{Style.FG_CYAN}4. Get Index Info{Style.RESET}")
             print(f"{Style.FG_CYAN}5. Change Index Type{Style.RESET}")
-            print(f"{Style.FG_CYAN}6. Exit{Style.RESET}")
+            print(f"{Style.FG_CYAN}6. Ask a Query{Style.RESET}")
+            print(f"{Style.FG_CYAN}7. Exit{Style.RESET}")
 
             print()
             opt: int = int(input(f"{Style.FG_YELLOW}Enter your choice: {Style.RESET}").strip().lower())
@@ -199,8 +231,34 @@ def menu() -> None:
                 case 5:
                     break  # Break to outer loop to change index type
             
-                # Exit
+                # Ask a Query
                 case 6:
+                    settings.append("Operation: Ask a Query")
+                    print_settings()
+
+                    index_id = input(f"{Style.FG_MAGENTA}Input index name to query (leave it empty to search across all indexes): {Style.RESET}").strip().lower()
+                    success = idx.load_index(index_id)
+                    
+                    if success != StatusCode.SUCCESS:
+                        print(f"{Style.FG_RED}Failed to load index '{index_id}'.{Style.RESET}\n")
+                        wait_for_enter()
+                        continue
+                    
+                    settings.append(f"Index: {index_id}" if index_id != "" else "Index: All")
+
+                    while True:
+                        print_settings()
+                        query = input(f"{Style.FG_MAGENTA}Input your query (type 'EXIT' to go back to previous menu): {Style.RESET}").strip()
+                        
+                        if query.upper() == "EXIT":
+                            break
+                        
+                        results = idx.query(query)
+                        pretty_print_query_results(results)
+                        wait_for_enter()
+
+                # Exit
+                case 7:
                     print(f"{Style.FG_GREEN}Exiting...{Style.RESET}")
                     exit(0)
 

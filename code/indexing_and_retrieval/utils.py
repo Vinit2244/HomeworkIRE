@@ -41,6 +41,7 @@ class StatusCode(Enum):
     ERROR_ACCESSING_INDEX: int = 1001
     INVALID_INPUT        : int = 1002
     INDEXING_FAILED      : int = 1003
+    FAILED_TO_REMOVE_FILE: int = 1004
     
     UNKNOWN_ERROR        : int = 9999
 
