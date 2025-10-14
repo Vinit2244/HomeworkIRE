@@ -6,36 +6,40 @@ from abc import ABC, abstractmethod
 
 # ========================= ENUMS =========================
 class IndexInfo(Enum):
-    NONE = 0 # Just a placeholder
-    BOOLEAN = 1
-    WORDCOUNT = 2
-    TFIDF = 3
+    NONE     : int = 0 # Just a placeholder
+    BOOLEAN  : int = 1
+    WORDCOUNT: int = 2
+    TFIDF    : int = 3
+
 
 class DataStore(Enum):
-    NONE = 0 # Just a placeholder
-    CUSTOM = 1
-    POSTGRESQL = 2
-    REDIS = 3
+    NONE      : int = 0 # Just a placeholder
+    CUSTOM    : int = 1
+    POSTGRESQL: int = 2
+    REDIS     : int = 3
+
 
 class Compression(Enum):
-    NONE = 1
-    CODE = 2
-    CLIB = 3
+    NONE: int = 1
+    CODE: int = 2
+    CLIB: int = 3
+
 
 class Optimizations(Enum):
-    NONE = '0'
-    SKIPPING = 'sp'
-    THRESHOLDING = 'th'
-    EARLYSTOPPING = 'es'
+    NONE         : str = '0'
+    SKIPPING     : str = 'sp'
+    THRESHOLDING : str = 'th'
+    EARLYSTOPPING: str = 'es'
+
 
 class QueryProc(Enum):
-    NONE = '0' # Just a placeholder
-    TERM = 'T'
-    DOC = 'D'
+    NONE: str = '0' # Just a placeholder
+    TERM: str = 'T'
+    DOC : str = 'D'
 
 
 # ====================== BASE CLASS =======================
-class IndexBase(ABC):
+class BaseIndex(ABC):
     """
     Base index class with abstract methods to inherit for specific implementations.
     """

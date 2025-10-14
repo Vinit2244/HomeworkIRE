@@ -119,6 +119,16 @@ class NewsDataset(Dataset):
 
         print(f"{Style.FG_GREEN}News dataset downloaded at {self.data_path}\n{Style.RESET}")
 
+    def get_attributes(self) -> List[str]:
+        # Get attributes from the first JSON file in the dataset
+        for f in self._file_iterator():
+            # Ignoring the first value which is the total count
+            if type(f) is int:
+                continue
+            data = json.load(f)
+            return list(data.keys())
+        return []
+
     def calculate_word_frequency(self) -> dict:
         freq: dict = defaultdict(int)
 

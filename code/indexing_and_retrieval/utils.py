@@ -10,38 +10,50 @@ CONFIG_FILE_PATH: str = "../../config.yaml"
 
 # ======================== CLASSES ========================
 class Style:
-    RESET      = "\033[0m"
-    BOLD       = "\033[01m"
-    UNDERLINE  = "\033[4m"
+    RESET     : str = "\033[0m"
+    BOLD      : str = "\033[01m"
+    UNDERLINE : str = "\033[4m"
 
     # Foreground colors
-    FG_RED     = "\033[31m"
-    FG_GREEN   = "\033[32m"
-    FG_YELLOW  = "\033[33m"
-    FG_BLUE    = "\033[34m"
-    FG_MAGENTA = "\033[35m"
-    FG_CYAN    = "\033[36m"
-    FG_WHITE   = "\033[37m"
-    FG_ORANGE  = "\033[38;5;208m"
+    FG_RED    : str = "\033[31m"
+    FG_GREEN  : str = "\033[32m"
+    FG_YELLOW : str = "\033[33m"
+    FG_BLUE   : str = "\033[34m"
+    FG_MAGENTA: str = "\033[35m"
+    FG_CYAN   : str = "\033[36m"
+    FG_WHITE  : str = "\033[37m"
+    FG_ORANGE : str = "\033[38;5;208m"
 
     # Background colors
-    BG_RED     = "\033[41m"
-    BG_GREEN   = "\033[42m"
-    BG_YELLOW  = "\033[43m"
-    BG_BLUE    = "\033[44m"
-    BG_MAGENTA = "\033[45m"
-    BG_CYAN    = "\033[46m"
-    BG_WHITE   = "\033[47m"
-    BG_ORANGE  = "\033[48;5;208m"
+    BG_RED    : str = "\033[41m"
+    BG_GREEN  : str = "\033[42m"
+    BG_YELLOW : str = "\033[43m"
+    BG_BLUE   : str = "\033[44m"
+    BG_MAGENTA: str = "\033[45m"
+    BG_CYAN   : str = "\033[46m"
+    BG_WHITE  : str = "\033[47m"
+    BG_ORANGE : str = "\033[48;5;208m"
+
 
 class StatusCode(Enum):
-    SUCCESS = 0
-    CONNECTION_FAILED = 1000
-    ERROR_ACCESSING_INDEX = 1001
-    INVALID_INPUT = 1002
-    INDEXING_FAILED = 1003
+    SUCCESS              : int = 0
+    CONNECTION_FAILED    : int = 1000
+    ERROR_ACCESSING_INDEX: int = 1001
+    INVALID_INPUT        : int = 1002
+    INDEXING_FAILED      : int = 1003
     
-    UNKNOWN_ERROR = 9999
+    UNKNOWN_ERROR        : int = 9999
+
+
+class IndexType(Enum):
+    ESIndex    : int = 1
+    CustomIndex: int = 2
+
+
+class DatasetType(Enum):
+    News     : int = 1
+    Wikipedia: int = 2
+
 
 # =================== UTILITY FUNCTIONS ===================
 def load_config() -> dict:

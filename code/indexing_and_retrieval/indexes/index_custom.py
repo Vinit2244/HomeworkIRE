@@ -1,7 +1,7 @@
 # ======================== IMPORTS ========================
-from .index_base import IndexBase
+from .index_base import BaseIndex
 
 
 # ======================== CLASSES ========================
-class CustomIndex(IndexBase):
+class CustomIndex(BaseIndex):
     ...

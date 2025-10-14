@@ -99,3 +99,51 @@ python3 index_data.py # To run in auto mode add the flag "--mode auto". But manu
   - Case insensitive
 
 ### Activity 2 - Own simple indexing
+
+## About Datasets
+
+### News Dataset
+
+- Source: https://github.com/Webhose/free-news-datasets  
+- Approx. Size: 1.02 GB  
+- File Type(s): JSON (compressed .json / .json.gz in repository)  
+- Attributes:  
+  - hread (thread id; appears as given)  
+  - uuid  
+  - url  
+  - ord_in_thread  
+  - author  
+  - published  
+  - title  
+  - text  
+  - highlightText  
+  - highlightTitle  
+  - highlightThreadTitle  
+  - language  
+  - sentiment  
+  - categories  
+  - topics  
+  - ai_allow  
+  - has_canonical  
+  - breaking  
+  - webz_reporter  
+  - external_links  
+  - external_images  
+  - internal_images  
+  - entities  
+  - syndication  
+  - trust  
+  - rating  
+  - crawled  
+  - updated  
+
+### Wikipedia Dataset (English)
+
+- Source: https://huggingface.co/datasets/wikimedia/wikipedia/tree/main/20231101.en  
+- Approx. Size: 11.6 GB  
+- File Type(s): Parquet (.parquet)  
+- Attributes:  
+  - id  
+  - url  
+  - title  
+  - text

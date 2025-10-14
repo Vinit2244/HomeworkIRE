@@ -3,7 +3,7 @@ import os
 import inspect
 from typing import Iterable
 from dotenv import load_dotenv
-from .index_base import IndexBase
+from .index_base import BaseIndex
 from utils import Style, StatusCode
 from elasticsearch import Elasticsearch, helpers
 
@@ -17,7 +17,7 @@ CHUNK_SIZE = 500  # Number of documents to index in one bulk operation
 
 
 # ======================== CLASSES ========================
-class ESIndex(IndexBase):
+class ESIndex(BaseIndex):
     def __init__(self, host: str, port: int, scheme: str, core: str, info: str="NONE", dstore: str="NONE", qproc: str="NONE", compr: str="NONE", optim: str="NONE"):
         super().__init__(core, info, dstore, qproc, compr, optim)
         self.host = host
@@ -57,7 +57,7 @@ class ESIndex(IndexBase):
         return self.es_client.cat.indices(format="json")
 
     def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> None:
-        # Create new index
+        # Create new index if it doesn't exist
         if self.es_client.indices.exists(index=index_id):
             print(f"Index '{index_id}' already exists")
         else:
