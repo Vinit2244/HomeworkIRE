@@ -4,6 +4,7 @@
     "preprocessing_settings": null,
     "search_field": null,
     "attributes_indexed": null,
+    "max_results": null,
     "queries": [
         {
             "query": "QUERY_1_TEXT_HERE",

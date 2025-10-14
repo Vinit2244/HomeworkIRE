@@ -73,6 +73,9 @@ def query_and_update(file_path: str) -> None:
     # Store the attributes that were indexed
     data["attributes_indexed"] = ATTRIBUTES_INDEXED
 
+    # Store the max results setting used
+    data["max_results"] = MAX_RESULTS
+
     index_id = data.get("index_id")
     if not index_id:
         print(f"{Style.FG_RED}Error: 'index_id' not found in the JSON file.{Style.RESET}")
