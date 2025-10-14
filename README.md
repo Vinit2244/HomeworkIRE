@@ -89,16 +89,15 @@ python3 generate_frequency_plots.py --data_state preprocessed # now the data has
 python3 main.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
 ```
 
-#### Notes
-
-- Wikipedia dataset:
-  - Need to manually downaload the .parquet files as downloading via code was leading to corrupt files
-- Frequency Plots:
-  - Only considers the `text` section of a document
-  - Omits punctuations
-  - Case insensitive
-
 ### Activity 2 - Own simple indexing
+
+```shell
+# Manipulate the indices
+python3 main.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
+
+# Generate the query outputs from elasticsearch to compare against custom index
+python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file follows the same structure as given in query_sets/example.json
+```
 
 ## About Datasets
 
@@ -147,3 +146,12 @@ python3 main.py # To run in auto mode add the flag "--mode auto". But manual mod
   - url  
   - title  
   - text
+
+## Notes
+
+- Wikipedia dataset:
+  - Need to manually downaload the .parquet files as downloading via code was leading to corrupt files
+- Frequency Plots:
+  - Only considers the `text` section of a document
+  - Omits punctuations
+  - Case insensitive

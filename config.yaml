@@ -22,6 +22,7 @@ elasticsearch:
   host: localhost
   port: 9200
   scheme: http     # https for secure connection, http for local connection
+  chunk_size: 500  # Number of documents to index in one bulk operation
 
 index:
   core: ESIndex    # Options: "ESIndex" (Elasticsearch), "CustomIndex" (Custom Index)
@@ -36,6 +37,8 @@ index:
   optim: NONE      # Optimisation choice: NONE, SKIPPING, THRESHOLDING or EARLYSTOPPING
   qproc: TERM      # Query Processing choice: TERM or DOC
 
+search_field: text        # The field in the indexed documents to be searched
+max_results: 50           # The number of top document IDs to retrieve for each query
 max_num_documents: 5000   # Maximum number of documents to be processed from each dataset. Set to null to process all documents
 top_k_words_threshold: 50 # Top K words to be plotted in frequency distribution plots
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output

@@ -1,0 +1,17 @@
+{
+    "index_id": "NAME_OF_YOUR_INDEX",
+    "n_docs_indexed": -1,
+    "preprocessing_settings": null,
+    "search_field": null,
+    "attributes_indexed": null,
+    "queries": [
+        {
+            "query": "QUERY_1_TEXT_HERE",
+            "docs": []
+        },
+        {
+            "query": "QUERY_2_TEXT_HERE",
+            "docs": []
+        }
+    ]
+}

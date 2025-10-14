@@ -42,6 +42,7 @@ class StatusCode(Enum):
     INVALID_INPUT        : int = 1002
     INDEXING_FAILED      : int = 1003
     FAILED_TO_REMOVE_FILE: int = 1004
+    QUERY_FAILED         : int = 1005
     
     UNKNOWN_ERROR        : int = 9999
 
@@ -91,3 +92,26 @@ def wait_for_enter():
     Waits for the user to press Enter.
     '''
     input(f"\n{Style.FG_BLUE}Press Enter to continue...{Style.RESET}")
+
+
+def ask_es_query(es_client, index_id: str, query: str, search_field: str, max_results: int, source: bool=True):
+    '''
+    Executes the given query on the specified Elasticsearch index and returns the response.
+    '''
+    query_clause = {
+        "match": {
+            search_field: query
+        }
+    }
+
+    try:
+        response = es_client.search(
+            index=index_id,
+            query=query_clause,
+            size=max_results,
+            _source=source
+        )
+    except Exception as e:
+        return StatusCode.QUERY_FAILED
+
+    return response

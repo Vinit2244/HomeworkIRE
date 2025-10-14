@@ -5,16 +5,20 @@ import inspect
 from typing import Iterable
 from dotenv import load_dotenv
 from .index_base import BaseIndex
-from utils import Style, StatusCode
 from elasticsearch import Elasticsearch, helpers
+from utils import Style, StatusCode, load_config, ask_es_query
 
 
 # ======================= GLOBALS ========================
 load_dotenv()  # Loads .env file into environment variables
-username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
-api_key = os.getenv("API_KEY")
-CHUNK_SIZE = 500  # Number of documents to index in one bulk operation
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
+API_KEY  = os.getenv("API_KEY")
+
+config = load_config()
+CHUNK_SIZE = config["elasticsearch"].get("chunk_size", 500)
+MAX_RESULTS = config.get("max_results", 50)
+SEARCH_FIELD = config.get("search_field", "text")
 
 
 # ======================== CLASSES ========================
@@ -32,7 +36,7 @@ class ESIndex(BaseIndex):
     def connect_to_cluster(self) -> StatusCode:
         self.es_client = Elasticsearch(
             [{'host': self.host, 'port': self.port, 'scheme': self.scheme}],
-            basic_auth=(username, password)
+            basic_auth=(USERNAME, PASSWORD)
         )
         try:
             cluster_info = self.es_client.info()
@@ -121,18 +125,14 @@ class ESIndex(BaseIndex):
             
         return StatusCode.SUCCESS
 
-    def query(self, query: str, index_id: str=None) -> str:
+    def query(self, query: str, index_id: str=None) -> str | StatusCode:
         if index_id is None or index_id.strip() == "":
             index_id = "*"  # Search across all indices if no specific index is provided
 
-        res = self.es_client.search(
-            index=index_id,
-            query={
-                "query_string": {
-                    "query": query
-                }
-            }
-        )
+        res = ask_es_query(self.es_client, index_id, query, SEARCH_FIELD, MAX_RESULTS, True)
+
+        if isinstance(res, StatusCode):
+            return res
 
         return json.dumps(res.body, indent=2)
 
