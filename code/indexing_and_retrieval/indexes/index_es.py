@@ -28,6 +28,7 @@ class ESIndex(BaseIndex):
         self.host = host
         self.port = port
         self.scheme = scheme
+        self.core = core
         status = self.connect_to_cluster()
 
         if status != StatusCode.SUCCESS:
