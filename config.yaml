@@ -31,8 +31,8 @@ index:
 # NOTE: !!!!!! PLEASE ALWAYS KEEP THE UNIQUE ID AS THE FIRST ATTRIBUTE IN THE LIST !!!!!!
   attributes: [uuid, text] # Attributes to be indexed from the dataset (Make sure to keep the unique id as first attribute)
   
-  info: BOOLEAN    # Kind of information indexed: BOOLEAN, WORDCOUNT or TFIDF
-  dstore: CUSTOM   # Datastore choice: CUSTOM, POSTGRESQL or REDIS
+  info: TFIDF    # Kind of information indexed: BOOLEAN, WORDCOUNT or TFIDF
+  dstore: CUSTOM   # Datastore choice: CUSTOM, MONGODB or REDIS
   compr: NONE      # Compression choice: NONE, CODE or CLIB
   optim: NONE      # Optimisation choice: NONE, SKIPPING, THRESHOLDING or EARLYSTOPPING
   qproc: TERM      # Query Processing choice: TERM or DOC

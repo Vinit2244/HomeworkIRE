@@ -24,26 +24,27 @@ print(f"{Style.FG_YELLOW}Using \n\tChunk size: {CHUNK_SIZE}, \n\tMax results: {M
 
 # ======================== CLASSES ========================
 class ESIndex(BaseIndex):
-    def __init__(self, host: str, port: int, scheme: str, core: str, info: str="NONE", dstore: str="NONE", qproc: str="NONE", compr: str="NONE", optim: str="NONE"):
+    def __init__(self, host: str, port: int, scheme: str, core: str, info: str="NONE", dstore: str="NONE", qproc: str="NONE", compr: str="NONE", optim: str="NONE", verbose: bool=True):
         super().__init__(core, info, dstore, qproc, compr, optim)
         self.host = host
         self.port = port
         self.scheme = scheme
         self.core = core
-        status = self._connect_to_cluster()
+        status = self._connect_to_cluster(verbose=verbose)
 
         if status != StatusCode.SUCCESS:
             raise ConnectionError("Failed to connect to Elasticsearch cluster.")
     
-    def _connect_to_cluster(self) -> StatusCode:
+    def _connect_to_cluster(self, verbose: bool) -> StatusCode:
         self.es_client = Elasticsearch(
             [{'host': self.host, 'port': self.port, 'scheme': self.scheme}],
             basic_auth=(USERNAME, PASSWORD)
         )
         try:
             cluster_info = self.es_client.info()
-            print(f"{Style.FG_CYAN}Connected to cluster: {cluster_info['cluster_name']}{Style.RESET}")
-            print(f"{Style.FG_CYAN}Elasticsearch version: {cluster_info['version']['number']}{Style.RESET}")
+            if verbose:
+                print(f"{Style.FG_CYAN}Connected to cluster: {cluster_info['cluster_name']}{Style.RESET}")
+                print(f"{Style.FG_CYAN}Elasticsearch version: {cluster_info['version']['number']}{Style.RESET}")
             return StatusCode.SUCCESS
         except Exception as e:
             print(f"{Style.FG_RED}Connection failed: {e}{Style.RESET}")

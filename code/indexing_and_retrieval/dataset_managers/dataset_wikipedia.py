@@ -132,11 +132,12 @@ class WikipediaDataset(Dataset):
 
 
 # ================== HELPER FUNCTIONS ====================
-def get_wikipedia_dataset_handler() -> WikipediaDataset:
+def get_wikipedia_dataset_handler(verbose: bool=True) -> WikipediaDataset:
     config = load_config()
     
     data_path: str = config["data"]["wikipedia"]["path"]
     max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
-    print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}.{Style.RESET}\nTo change, modify config.yaml file.\n")
+    if verbose:
+        print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}.{Style.RESET}\nTo change, modify config.yaml file.\n")
     
     return WikipediaDataset(data_path, max_num_docs)

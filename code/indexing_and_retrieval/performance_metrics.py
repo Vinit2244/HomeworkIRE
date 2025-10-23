@@ -2,7 +2,9 @@
 import os
 import json
 import time
+import psutil
 import argparse
+import threading
 import seaborn as sns
 from enum import Enum
 from typing import List
@@ -10,197 +12,146 @@ import matplotlib.pyplot as plt
 from prettytable import PrettyTable
 from indexes import ESIndex, CustomIndex
 from utils import Style, IndexType, load_config
+from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
 
 
-# ======================= CLASSES =========================
-class PerformanceMetrics:
-    Latency: str = "latency"
-    Throughput: str = "throughput"
-    MemoryUsage: str = "memory_usage"
-    FunctionalMetrics: str = "functional_metrics"
+# ====================== CONSTANTS ========================
+mem_usage_diff_info_args_list = [
+    # Order: index_id, index_type, dataset, info, dstore, qproc, compr, optim, attributes
+    # ES Index - News Dataset
+    ["es_news",         "ESIndex",     "News",      "NONE",      "NONE", "NONE", "NONE", "NONE", ["uuid", "text"]],
+    # ES Index - Wikipedia Dataset
+    ["es_wiki",         "ESIndex",     "Wikipedia", "NONE",      "NONE", "NONE", "NONE", "NONE", ["id", "text"]],
+    # Custom Index - News Dataset
+    ["cust_news_bool",  "CustomIndex", "News",      "BOOLEAN",   "NONE", "NONE", "NONE", "NONE", ["uuid", "text"]],
+    ["cust_news_wc",    "CustomIndex", "News",      "WORDCOUNT", "NONE", "NONE", "NONE", "NONE", ["uuid", "text"]],
+    ["cust_news_tfidf", "CustomIndex", "News",      "TFIDF",     "NONE", "NONE", "NONE", "NONE", ["uuid", "text"]],
+    # Custom Index - Wikipedia Dataset
+    ["cust_wiki_boo",   "CustomIndex", "Wikipedia", "BOOLEAN",   "NONE", "NONE", "NONE", "NONE", ["id", "text"]],
+    ["cust_wiki_wc",    "CustomIndex", "Wikipedia", "WORDCOUNT", "NONE", "NONE", "NONE", "NONE", ["id", "text"]],
+    ["cust_wiki_tfidf", "CustomIndex", "Wikipedia", "TFIDF",     "NONE", "NONE", "NONE", "NONE", ["id", "text"]]
+]
+
+
+# ======================= GLOBALS =========================
+memory_usage = []
+monitoring = True
+INTERVAL = 0.01  # seconds
+
+
+# ======================= THREADS =========================
+def monitor_memory(interval:int=1):
+    """
+    Continuously record memory usage every `interval` seconds.
+    """
+    while monitoring:
+        memory_usage.append(psutil.virtual_memory().percent)
+        time.sleep(interval)
 
 
 # =================== HELPER FUNCTIONS ====================
-def comma_separated_list(arg):
-    return arg.split(',')
+def clear_folder(folder_path: str) -> None:
+    for file in os.listdir(folder_path):
+        os.remove(os.path.join(folder_path, file))
 
 
-def print_summary(outputs: dict) -> None:
-    
-    print("\n================== Performance Metrics Summary ==================")
-    
-    table = PrettyTable()
-    table.field_names = ["Metric", "Key", "Value"]
-    table.align = "l"
-    
-    for metric, result in outputs.items():
-        if isinstance(result, dict):
-            for key, value in result.items():
-                if key == "all_latencies_seconds":
-                    continue  # Skip printing all latencies to avoid clutter
-                
-                # Round numeric values to 3 decimal places
-                if isinstance(value, (int, float)):
-                    formatted_value = round(value, 3)
-                else:
-                    formatted_value = value
-                
-                table.add_row([metric.upper(), key, formatted_value])
-        else:
-            # Round numeric values to 3 decimal places
-            if isinstance(result, (int, float)):
-                formatted_result = round(result, 3)
-            else:
-                formatted_result = result
-            table.add_row([metric.upper(), "", formatted_result])
-    
-    print(table)
-    print("=================================================================\n")
+# ====================== FUNCTIONS ========================
+def calc_memory_usage(index_id: str, index_type: str, dataset: str, info: str="NONE", dstore: str="NONE", qproc: str="NONE", compr: str="NONE", optim: str="NONE", attributes: List[str]=["text"]) -> None:
+    # Reset the variables
+    global monitoring, memory_usage
+    monitoring = True
+    memory_usage.clear()
 
-# ======================= FUNCTIONS =======================
-def calc_latency(index, file_path: str, output_folder: str=None, suffix: str=None) -> None:
-    with open(file_path, 'r') as f:
-        data = json.load(f)
+    # Start monitoring thread
+    t = threading.Thread(target=monitor_memory, args=(INTERVAL,))
+    t.start()
 
-    index_id: str = data.get("index_id", "")
-    
-    queries = data.get("queries", [])
-    if not queries:
-        print(f"{Style.FG_ORANGE}No queries found in the file.{Style.RESET}")
+    # Select Dataset
+    if dataset == "News":
+        dataset_handler = get_news_dataset_handler(verbose=False)
+    elif dataset == "Wikipedia":
+        dataset_handler = get_wikipedia_dataset_handler(verbose=False)
+    else:
+        print(f"{Style.FG_RED}Invalid dataset for memory usage calculation.{Style.RESET}")
         return
     
-    latencies: List[int] = list()
+    # Select Index
+    if index_type == "ESIndex":
+        index = ESIndex(ES_HOST, ES_PORT, ES_SCHEME, index_type, verbose=False)
+    elif index_type == "CustomIndex":
+        index = CustomIndex(index_type, info, dstore, qproc, compr, optim)       
+    else:
+        print(f"{Style.FG_RED}Invalid index type for memory usage calculation.{Style.RESET}")
+        return
     
-    for query in queries:
-        start_time = time.time()
-        _ = index.query(query.get("query", ""), index_id)
-        end_time = time.time()
-        latency = end_time - start_time
-        latencies.append(latency)
-        print(f"Query: {query.get('query', '')} | Latency: {round(latency, 4)} seconds")
+    # Create Index
+    index.create_index(index_id, dataset_handler.get_files(attributes))
 
-    # Print average, p95 and p99 latencies and plot a graph to visualise
-    if latencies:
-        avg_latency = sum(latencies) / len(latencies)
-        latencies.sort()
-        p95_latency = latencies[int(0.95 * len(latencies)) - 1]
-        p99_latency = latencies[int(0.99 * len(latencies)) - 1]
-        print(f"\n{Style.FG_CYAN}Average Latency: {round(avg_latency, 4)} seconds{Style.RESET}")
-        print(f"{Style.FG_CYAN}95th Percentile Latency: {round(p95_latency, 4)} seconds{Style.RESET}")
-        print(f"{Style.FG_CYAN}99th Percentile Latency: {round(p99_latency, 4)} seconds{Style.RESET}")
+    # Stop monitoring thread
+    monitoring = False
+    t.join()
 
+    # Delete the created index to free up memory
+    index.delete_index(index_id)
+
+
+def plot_memory_usage_comparison(output_folder: str) -> None:
+    datasets = set([args[2] for args in mem_usage_diff_info_args_list])
+    for dataset in datasets:
         plt.figure(figsize=(10, 6))
-        sns.histplot(latencies, bins=20, kde=True)
-        plt.title(f'Query Latency Distribution for {index_type}')
-        plt.xlabel('Latency (seconds)')
-        plt.ylabel('Frequency')
-        plt.axvline(avg_latency, color='r', linestyle='--', label='Average Latency')
-        plt.axvline(p95_latency, color='g', linestyle='--', label='95th Percentile Latency')
-        plt.axvline(p99_latency, color='b', linestyle='--', label='99th Percentile Latency')
+        for args in mem_usage_diff_info_args_list:
+            if args[2] != dataset:
+                continue
+            # Load the memory usage data from the corresponding JSON file
+            input_file_path: str = f"./temp/memory_usage_{args[1]}_{args[2]}_{args[3]}_{args[4]}_{args[5]}_{args[6]}_{args[7]}.json"
+            with open(input_file_path, 'r') as f:
+                mem_usage_data = json.load(f)
+            label = f"{args[1]}-{args[3]}" if args[1] == "CustomIndex" else args[1]
+            plt.plot(mem_usage_data, label=label)
+        
+        plt.title(f'Memory Usage Comparison on {dataset} Dataset')
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Memory Usage (%)')
         plt.legend()
         
-        if output_folder is None:
-            plt.show()
-        else:
-            output_file_path: str = os.path.join(output_folder, f"latency_hist_{index.core}_{index_id}_{str(suffix)}.png")
-            plt.savefig(output_file_path)
-            print(f"{Style.FG_GREEN}Latency distribution plot saved at '{output_file_path}'.{Style.RESET}")
-    else:
-        print(f"{Style.FG_ORANGE}No latencies recorded.{Style.RESET}")
-    
-    return {
-        "average_latency_seconds": avg_latency,
-        "p95_latency_seconds": p95_latency,
-        "p99_latency_seconds": p99_latency,
-        "all_latencies_seconds": latencies
-    }
+        output_file_path: str = os.path.join(output_folder, f"diff_info_memory_usage_comparison_{dataset}.png")
+        plt.savefig(output_file_path)
+        print(f"{Style.FG_GREEN}Memory usage comparison plot saved at '{output_file_path}'.{Style.RESET}")
 
-
-def calc_throughput(index, file_path: str) -> None:
-    with open(file_path, 'r') as f:
-        data = json.load(f)
-    
-    index_id: str = data.get("index_id", "")
-    queries = data.get("queries", [])
-    if not queries:
-        print(f"{Style.FG_ORANGE}No queries found in the file.{Style.RESET}")
-        return
-    
-    start_time = time.time()
-    for query in queries:
-        _ = index.query(query.get("query", ""), index_id)
-    end_time = time.time()
-    total_time = end_time - start_time
-    throughput = len(queries) / total_time if total_time > 0 else 0
-    print(f"\n{Style.FG_CYAN}Throughput: {round(throughput, 2)} queries/second over {len(queries)} queries in {round(total_time, 4)} seconds.{Style.RESET}")
-
-    return {
-        "total_queries": len(queries),
-        "total_time_seconds": total_time,
-        "throughput_qps": throughput
-    }
-
-
-def calc_memory_usage():
-    # TODO: Implement memory usage calculation
-    ...
-
-
-def calc_functional_metrics():
-    # TODO: Implement functional metrics calculation (precision, recall, ranking measure)
-    ...
 
 
 # ========================= MAIN ==========================
 if __name__ == "__main__":
-    argparser = argparse.ArgumentParser(description="Runs the queries and reports the system response time for each query.")
-    argparser.add_argument('--metrics', type=comma_separated_list, required=True, help="Performance metric to calculate. Comma separated list of all the metrics to calculate (latency, throughput, memory_usage, functional_metrics).")
-    argparser.add_argument('--index_type', type=str, required=True, choices=['CustomIndex', 'ESIndex'], help="Type of index: 'custom' or 'es' (Elasticsearch).")
-    argparser.add_argument('--dataset', type=str, required=True, choices=['News', 'Wikipedia'], help="Dataset type: 'news' or 'wikipedia'.")
-    argparser.add_argument('--query_file', type=str, required=True, help="Path to the JSON file containing queries.")
+    argparser = argparse.ArgumentParser(description="Calculates various metrics on ES and Custom Index and plots graphs.")
+    argparser.add_argument('--query_file', type=str, required=False, help="Path to the JSON file containing queries.")
     
     args = argparser.parse_args()
-    metrics = args.metrics
-    file_path = args.query_file
-    index_type = args.index_type
-    dataset = args.dataset
+    query_file_path = args.query_file
+
+    # Create a temp folder to store intermediate outputs
+    os.makedirs("temp", exist_ok=True)
 
     config = load_config()
     output_dir = config.get("output_folder_path", ".")
-    print(f"{Style.FG_YELLOW}Using output folder path: {output_dir}{Style.RESET}. To change, modify config.yaml file.\n")
 
     global ES_HOST, ES_PORT, ES_SCHEME
     ES_HOST = config["elasticsearch"].get("host", "localhost")
     ES_PORT = config["elasticsearch"].get("port", 9200)
     ES_SCHEME = config["elasticsearch"].get("scheme", "http")
 
-    if index_type == IndexType.ESIndex.name:
-        idx = ESIndex(ES_HOST, ES_PORT, ES_SCHEME, index_type)
-        print(f"{Style.FG_YELLOW}Using Elasticsearch Index at {ES_HOST}:{ES_PORT} with scheme {ES_SCHEME}{Style.RESET}. To change, modify config.yaml file.\n")
-    elif index_type == IndexType.CustomIndex.name:
-        # TODO: After implementing CustomIndex, update the initialization here
-        idx = CustomIndex()
-    else:
-        print(f"Invalid index type: {index_type}")
-    
-    outputs: dict = dict()
+    # ========================================================================
+    # Memory footprint comparison for different IndexInfo configurations
+    # ========================================================================
+    print(f"{Style.FG_MAGENTA}Calculating Memory Usage Comparison for Different Index Information Types...{Style.RESET}")
+    for args in mem_usage_diff_info_args_list:
+        print(f"{Style.FG_CYAN}Calculating memory usage for IndexType: {args[1]}, Dataset: {args[2]}, Info: {args[3]}...{Style.RESET}")
+        calc_memory_usage(*args)
 
-    if PerformanceMetrics.Latency in metrics:
-        latency_output: dict = calc_latency(idx, file_path, output_dir, dataset)
-        outputs["latency"] = latency_output
-    
-    if PerformanceMetrics.Throughput in metrics:
-        throughput_output: dict = calc_throughput(idx, file_path)
-        outputs["throughput"] = throughput_output
-    
-    if PerformanceMetrics.MemoryUsage in metrics:
-        # TODO: After implementing memory usage calculation, update this
-        memory_usage_output: dict = calc_memory_usage()
-        outputs["memory_usage"] = memory_usage_output
+        # Store the memory usage data to a JSON file
+        output_file_path: str = f"./temp/memory_usage_{args[1]}_{args[2]}_{args[3]}_{args[4]}_{args[5]}_{args[6]}_{args[7]}.json"
+        with open(output_file_path, 'w') as f:
+            json.dump(memory_usage, f)
 
-    if PerformanceMetrics.FunctionalMetrics in metrics:
-        # TODO: After implementing functional metrics calculation, update this
-        functional_metrics_output: dict = calc_functional_metrics()
-        outputs["functional_metrics"] = functional_metrics_output
-
-    print_summary(outputs)
+    print(f"{Style.FG_MAGENTA}Plotting Memory Usage Comparison for Different Index Information Types...{Style.RESET}")
+    plot_memory_usage_comparison(output_dir)
+    clear_folder("./temp")

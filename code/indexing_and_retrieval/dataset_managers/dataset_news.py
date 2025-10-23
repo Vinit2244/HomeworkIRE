@@ -215,12 +215,13 @@ class NewsDataset(Dataset):
 
 
 # ================== HELPER FUNCTIONS ====================
-def get_news_dataset_handler() -> NewsDataset:
+def get_news_dataset_handler(verbose: bool=True) -> NewsDataset:
     config: dict = load_config()
 
     path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
     max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
-    print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}, \n\tUnzipped: {unzipped}{Style.RESET}. \nTo change, modify config.yaml file.\n")
+    if verbose:
+        print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}, \n\tUnzipped: {unzipped}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
     return NewsDataset(path, max_num_docs, unzipped)
