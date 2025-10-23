@@ -137,5 +137,6 @@ def get_wikipedia_dataset_handler() -> WikipediaDataset:
     
     data_path: str = config["data"]["wikipedia"]["path"]
     max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+    print(f"{Style.FG_YELLOW}Using Max docs: {max_num_docs}{Style.RESET}. To change, modify config.yaml file.\n")
     
     return WikipediaDataset(data_path, max_num_docs)

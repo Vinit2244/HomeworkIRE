@@ -2,17 +2,21 @@
 import json
 import pprint
 import argparse
+from tqdm import tqdm
 from typing import List
+from rich.table import Table
+from rich.console import Console
+from rich.progress import Progress
 from indexes import ESIndex, CustomIndex, BaseIndex
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
 from utils import Style, StatusCode, load_config, clear_screen, wait_for_enter, IndexType, DatasetType
 
 
 # ======================= GLOBALS ========================
-config: dict = None
-host: str | None = None
-port: int | None = None
-scheme: str | None = None
+config: dict = load_config()
+host: str   = config["elasticsearch"]["host"]
+port: int   = config["elasticsearch"]["port"]
+scheme: str = config["elasticsearch"]["scheme"]
 settings: List[str] = []
 
 
@@ -53,26 +57,14 @@ def handle_create_index(idx: BaseIndex, _type: IndexType) -> None:
     attributes: str = input(f"{Style.FG_YELLOW}Enter attributes to index (comma-separated, e.g., uuid,text): {Style.RESET}").strip().lower()
     attributes: List[str] = [attr.strip() for attr in attributes.split(",")]
     
-    # ESIndex
-    if _type == IndexType.ESIndex:
-        status: int = idx.create_index(index_id, dataset_handler.get_files(attributes))
+    status: int = idx.create_index(index_id, dataset_handler.get_files(attributes))
 
-        if status == StatusCode.SUCCESS:
-            print(f"{Style.FG_GREEN}Index '{index_id}' created successfully.{Style.RESET}")
-        elif status == StatusCode.INDEXING_FAILED:
-            print(f"{Style.FG_RED}Indexing failed for index '{index_id}'.{Style.RESET}")
-
-    # CustomIndex
-    # TODO: Implement CustomIndex class and create_index logic
-    else:
-
-        # News Dataset
-        if dataset == DatasetType.News:
-            ...
-
-        # Wikipedia Dataset
-        else:
-            ...
+    if status == StatusCode.SUCCESS:
+        print(f"{Style.FG_GREEN}Index '{index_id}' created successfully.{Style.RESET}")
+    elif status == StatusCode.INDEXING_FAILED:
+        print(f"{Style.FG_RED}Indexing failed for index '{index_id}'.{Style.RESET}")
+    elif status == StatusCode.INDEX_ALREADY_EXISTS:
+        print(f"{Style.FG_RED}Index '{index_id}' already exists.{Style.RESET}")
 
 
 def generate_index_id(core: str, dataset: str, version: str="v1.0") -> str:
@@ -134,10 +126,18 @@ def menu() -> None:
 
         match _type:
             case IndexType.ESIndex:
+                print(f"{Style.FG_YELLOW}Using Elasticsearch Index at {host}:{port} with scheme {scheme}{Style.RESET}. To change, modify config.yaml file.\n")
                 idx = ESIndex(host, port, scheme, _type.name)
                 settings.append("Index Type: ESIndex")
             case IndexType.CustomIndex:
-                # TODO: Implement CustomIndex class and its initialization
+                index_settings: dict = config.get("index")
+                info: str = index_settings.get("info", "NONE")
+                dstore: str = index_settings.get("dstore", "NONE")
+                qproc: str = index_settings.get("qproc", "NONE")
+                compr: str = index_settings.get("compr", "NONE")
+                optim: str = index_settings.get("optim", "NONE")
+                print(f"{Style.FG_YELLOW}Using Custom Index with settings - Info: {info}, Data Store: {dstore}, Query Processor: {qproc}, Compression: {compr}, Optimization: {optim}{Style.RESET}. To change, modify config.yaml file.\n")
+                idx = CustomIndex(_type.name, info, dstore, qproc, compr, optim)
                 settings.append("Index Type: CustomIndex")
             case _:
                 print(f"{Style.FG_RED}Invalid index type. Please try again.{Style.RESET}")
@@ -158,7 +158,8 @@ def menu() -> None:
             print(f"{Style.FG_CYAN}4. Get Index Info{Style.RESET}")
             print(f"{Style.FG_CYAN}5. Change Index Type{Style.RESET}")
             print(f"{Style.FG_CYAN}6. Ask a Query{Style.RESET}")
-            print(f"{Style.FG_CYAN}7. Exit{Style.RESET}")
+            print(f"{Style.FG_CYAN}7. List files in Index{Style.RESET}")
+            print(f"{Style.FG_CYAN}8. Exit{Style.RESET}")
 
             print()
             opt: int = int(input(f"{Style.FG_YELLOW}Enter your choice: {Style.RESET}").strip().lower())
@@ -257,8 +258,38 @@ def menu() -> None:
                         pretty_print_query_results(results)
                         wait_for_enter()
 
-                # Exit
+                # List files in Index
                 case 7:
+                    settings.append("Operation: List files in Index")
+                    print_settings()
+
+                    index_id: str = input(f"{Style.FG_YELLOW}Enter index name to list files: {Style.RESET}").strip()
+                    indexed_files = idx.list_indexed_files(index_id)
+                    
+                    console = Console()
+                    table = Table(title=f"Indexed Files in '{index_id}'", show_lines=False)
+                    table.add_column("S.No", justify="right", style="cyan", no_wrap=True)
+                    table.add_column("File Name", style="green")
+
+                    count = 0
+                    for doc in tqdm(indexed_files, desc="Fetching files", unit="files"):
+                        count += 1
+                        table.add_row(str(count), doc)
+                        if count % 5000 == 0:  # print in batches for memory safety
+                            console.print(table)
+                            table = Table(show_lines=False)
+                            table.add_column("S.No", justify="right", style="cyan", no_wrap=True)
+                            table.add_column("File Name", style="green")
+
+                    if count % 5000 != 0:  # print remaining rows
+                        console.print(table)
+                    
+                    console.print(f"[bold green]Total files indexed: {count}")
+
+                    wait_for_enter()
+
+                # Exit
+                case 8:
                     print(f"{Style.FG_GREEN}Exiting...{Style.RESET}")
                     exit(0)
 
@@ -299,6 +330,8 @@ def create_es_index(args: dict) -> None:
         print(f"{Style.FG_GREEN}Index '{index_id}' created successfully.{Style.RESET}")
     elif status == StatusCode.INDEXING_FAILED:
         print(f"{Style.FG_RED}Indexing failed for index '{index_id}'.{Style.RESET}")
+    elif status == StatusCode.INDEX_ALREADY_EXISTS:
+        print(f"{Style.FG_RED}Index '{index_id}' already exists.{Style.RESET}")
 
 
 def create_custom_index(args: dict) -> None:
@@ -318,7 +351,9 @@ def main(params, mode: str) -> None:
         if params["core"] == "ESIndex":
             create_es_index(params)
         elif params["core"] == "CustomIndex":
-            create_custom_index(params)
+            # TODO: After implementing CustomIndex, uncomment the line below
+            # create_custom_index(params)
+            ...
         else:
             raise ValueError("Invalid index core/type specified in the configuration.")
     elif mode == "manual":
@@ -328,13 +363,13 @@ def main(params, mode: str) -> None:
 
 
 if __name__ == "__main__":
-    config = load_config()
-    host = config["elasticsearch"]["host"]
-    port = config["elasticsearch"]["port"]
-    scheme = config["elasticsearch"]["scheme"]
-
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--mode", type=str, default="manual", choices=['manual', 'config'], help="Mode of operation. 'manual' for interactive menu, 'config' for config file.")
     args = argparser.parse_args()
+
+    # TODO: Remove this block after implementing config mode
+    if args.mode == "config":
+        print(f"{Style.FG_YELLOW}Yet to be implemented, please run in manual mode...{Style.RESET}")
+        exit(0)
 
     main(config["index"], args.mode)

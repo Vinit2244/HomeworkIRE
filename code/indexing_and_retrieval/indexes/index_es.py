@@ -18,7 +18,8 @@ API_KEY  = os.getenv("API_KEY")
 config = load_config()
 CHUNK_SIZE = config["elasticsearch"].get("chunk_size", 500)
 MAX_RESULTS = config.get("max_results", 50)
-SEARCH_FIELD = config.get("search_field", "text")
+SEARCH_FIELDS = config.get("search_fields", ["text"])
+print(f"{Style.FG_YELLOW}Using \n\tChunk size: {CHUNK_SIZE}, \n\tMax results: {MAX_RESULTS}, \n\tSearch field: {SEARCH_FIELDS}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
 
 # ======================== CLASSES ========================
@@ -29,12 +30,12 @@ class ESIndex(BaseIndex):
         self.port = port
         self.scheme = scheme
         self.core = core
-        status = self.connect_to_cluster()
+        status = self._connect_to_cluster()
 
         if status != StatusCode.SUCCESS:
             raise ConnectionError("Failed to connect to Elasticsearch cluster.")
     
-    def connect_to_cluster(self) -> StatusCode:
+    def _connect_to_cluster(self) -> StatusCode:
         self.es_client = Elasticsearch(
             [{'host': self.host, 'port': self.port, 'scheme': self.scheme}],
             basic_auth=(USERNAME, PASSWORD)
@@ -61,10 +62,10 @@ class ESIndex(BaseIndex):
     def list_indices(self) -> Iterable[str]:
         return self.es_client.cat.indices(format="json")
 
-    def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> None:
+    def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> StatusCode:
         # Create new index if it doesn't exist
         if self.es_client.indices.exists(index=index_id):
-            print(f"Index '{index_id}' already exists")
+            return StatusCode.INDEX_ALREADY_EXISTS
         else:
             self.es_client.indices.create(index=index_id)
 
@@ -130,7 +131,7 @@ class ESIndex(BaseIndex):
         if index_id is None or index_id.strip() == "":
             index_id = "*"  # Search across all indices if no specific index is provided
 
-        res = ask_es_query(self.es_client, index_id, query, SEARCH_FIELD, MAX_RESULTS, True)
+        res = ask_es_query(self.es_client, index_id, query, SEARCH_FIELDS, MAX_RESULTS, True)
 
         if isinstance(res, StatusCode):
             return res
@@ -144,5 +145,19 @@ class ESIndex(BaseIndex):
         else:
             return StatusCode.ERROR_ACCESSING_INDEX
 
-    def list_indexed_files(self, index_id: str) -> Iterable[str]:
-        ...
+    def list_indexed_files(self, index_id: str) -> Iterable[str] | StatusCode:
+        # Stream all documents
+        try:
+            results = helpers.scan(
+                client=self.es_client,
+                index=index_id,
+                query={"query": {"match_all": {}}},
+                scroll="5m",
+                size=1000  # batch size per scroll request
+            )
+
+            results = [doc["_id"] for doc in results]
+
+            return results
+        except:
+            return StatusCode.ERROR_ACCESSING_INDEX

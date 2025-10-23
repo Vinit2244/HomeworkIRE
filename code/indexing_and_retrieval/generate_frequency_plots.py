@@ -41,6 +41,7 @@ def main(args) -> None:
     top_k_words_threshold: int = config["top_k_words_threshold"]
     max_num_documents: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
     output_folder_path: str = config["output_folder_path"]
+    print(f"{Style.FG_YELLOW}Using \n\tTop K words threshold: {top_k_words_threshold}, \n\tMax documents: {max_num_documents}, \n\tOutput folder path: {output_folder_path}{Style.RESET}. \nTo change, modify config.yaml file.\n")
     os.makedirs(output_folder_path, exist_ok=True)
 
 
@@ -48,6 +49,7 @@ def main(args) -> None:
     print(f"{Style.FG_CYAN}Calculating word frequency for news dataset...{Style.RESET}")
     news_data_path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
+    print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_documents}, \n\tUnzipped: {unzipped}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
     news_dataset_handler = NewsDataset(news_data_path, max_num_documents, unzipped)
     news_data_freq_dist: dict = news_dataset_handler.calculate_word_frequency()
@@ -63,6 +65,7 @@ def main(args) -> None:
     # Wikipedia Dataset
     print(f"{Style.FG_CYAN}Calculating word frequency for wikipedia dataset...{Style.RESET}")
     wikipedia_data_path: str = config["data"]["wikipedia"]["path"]
+    print(f"{Style.FG_YELLOW}Using Max docs: {max_num_documents}{Style.RESET}. To change, modify config.yaml file.\n")
 
     wikipedia_dataset_handler = WikipediaDataset(wikipedia_data_path, max_num_documents)
     wikipedia_data_freq_dist: dict = wikipedia_dataset_handler.calculate_word_frequency()

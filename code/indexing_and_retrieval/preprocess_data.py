@@ -23,6 +23,7 @@ def preprocess_data(config: dict) -> None:
     lemmatize         : bool             = True if lemmatization_algo else False
 
     max_num_documents: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+    print(f"{Style.FG_YELLOW}Using Settings for preprocessing: \n\tLowercase: {lowercase}, \n\tRemove Stopwords: {rem_stop} ({stopword_langs}), \n\tRemove Punctuation: {rem_punc}, \n\tRemove Numbers: {rem_num}, \n\tRemove Special Characters: {rem_special}, \n\tStemming: {stem} ({stemming_algo}), \n\tLemmatization: {lemmatize} ({lemmatization_algo}), \n\tMax documents: {max_num_documents}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
     print(f"{Style.FG_CYAN}Preprocessing news dataset...{Style.RESET}")
     path_to_news_dataset: str = config["data"]["news"]["path"]

@@ -36,6 +36,8 @@ def query_and_update(file_path: str) -> None:
     PREPROCESSING_SETTINGS: dict = config.get("preprocessing", {})
     ATTRIBUTES_INDEXED    : list = config["index"].get("attributes", [])
 
+    print(f"{Style.FG_YELLOW}Using \n\tElasticsearch Host: {ES_HOST}, \n\tPort: {ES_PORT}, \n\tScheme: {ES_SCHEME}, \n\tMax Results: {MAX_RESULTS}, \n\tSearch Field: {SEARCH_FIELD}{Style.RESET}. \nTo change, modify config.yaml file.\n")
+
     # Connect to Elasticsearch
     print(f"Connecting to Elasticsearch at {ES_SCHEME}://{ES_HOST}:{ES_PORT}...")
     try:

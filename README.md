@@ -93,7 +93,7 @@ python3 main.py # To run in auto mode add the flag "--mode auto". But manual mod
 
 ```shell
 # Manipulate the indices
-python3 main.py # To run in auto mode add the flag "--mode auto". But manual mode is recommended as it gives you more control over indexing your data
+python3 main.py # To run in auto mode (from config file) add the flag "--mode config". But manual mode is recommended as it gives you more control over indexing your data
 
 # Generate the query outputs from elasticsearch to compare against custom index
 python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file follows the same structure as given in query_sets/example.json

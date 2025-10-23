@@ -167,6 +167,7 @@ if __name__ == "__main__":
 
     config = load_config()
     output_dir = config.get("output_folder_path", ".")
+    print(f"{Style.FG_YELLOW}Using output folder path: {output_dir}{Style.RESET}. To change, modify config.yaml file.\n")
 
     global ES_HOST, ES_PORT, ES_SCHEME
     ES_HOST = config["elasticsearch"].get("host", "localhost")
@@ -175,6 +176,7 @@ if __name__ == "__main__":
 
     if index_type == IndexType.ESIndex.name:
         idx = ESIndex(ES_HOST, ES_PORT, ES_SCHEME, index_type)
+        print(f"{Style.FG_YELLOW}Using Elasticsearch Index at {ES_HOST}:{ES_PORT} with scheme {ES_SCHEME}{Style.RESET}. To change, modify config.yaml file.\n")
     elif index_type == IndexType.CustomIndex.name:
         # TODO: After implementing CustomIndex, update the initialization here
         idx = CustomIndex()

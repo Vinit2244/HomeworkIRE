@@ -43,6 +43,8 @@ class StatusCode(Enum):
     INDEXING_FAILED      : int = 1003
     FAILED_TO_REMOVE_FILE: int = 1004
     QUERY_FAILED         : int = 1005
+    INDEX_NOT_FOUND      : int = 1006
+    INDEX_ALREADY_EXISTS : int = 1007
     
     UNKNOWN_ERROR        : int = 9999
 
@@ -94,13 +96,13 @@ def wait_for_enter():
     input(f"\n{Style.FG_BLUE}Press Enter to continue...{Style.RESET}")
 
 
-def ask_es_query(es_client, index_id: str, query: str, search_field: str, max_results: int, source: bool=True):
+def ask_es_query(es_client, index_id: str, query: str, search_fields: List[str], max_results: int, source: bool=True):
     '''
     Executes the given query on the specified Elasticsearch index and returns the response.
     '''
     query_clause = {
         "match": {
-            search_field: query
+            search_field: query for search_field in search_fields
         }
     }
 
