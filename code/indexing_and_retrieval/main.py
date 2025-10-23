@@ -136,7 +136,7 @@ def menu() -> None:
                 qproc: str = index_settings.get("qproc", "NONE")
                 compr: str = index_settings.get("compr", "NONE")
                 optim: str = index_settings.get("optim", "NONE")
-                print(f"{Style.FG_YELLOW}Using Custom Index with settings - Info: {info}, Data Store: {dstore}, Query Processor: {qproc}, Compression: {compr}, Optimization: {optim}{Style.RESET}. To change, modify config.yaml file.\n")
+                print(f"{Style.FG_YELLOW}Using Custom Index with settings \n\tInfo: {info}, \n\tData Store: {dstore}, \n\tQuery Processor: {qproc}, \n\tCompression: {compr}, \n\tOptimization: {optim}.{Style.RESET} \nTo change, modify config.yaml file.\n")
                 idx = CustomIndex(_type.name, info, dstore, qproc, compr, optim)
                 settings.append("Index Type: CustomIndex")
             case _:

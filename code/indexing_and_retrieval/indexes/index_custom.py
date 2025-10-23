@@ -7,6 +7,7 @@ import yaml
 from typing import Iterable
 import json
 from pathlib import Path
+import shutil
 
 
 # ======================= GLOBALS ========================
@@ -51,12 +52,12 @@ class CustomIndex(BaseIndex):
         return index_id in all_indices
 
     def _build_inverted_index(self, files: Iterable[tuple[str, dict]], index_data_path: str) -> dict:
-        # Save normally on disk in the form of json files
-        if self.dstore == DataStore.CUSTOM.value:
+        # Create place for storing documents
+        if self.dstore == DataStore.CUSTOM.name:
             os.mkdir(os.path.join(index_data_path, "documents")) # Folder for storing all the documents
-        elif self.dstore == DataStore.MONGODB.value:
+        elif self.dstore == DataStore.MONGODB.name:
             ...
-        elif self.dstore == DataStore.REDIS.value:
+        elif self.dstore == DataStore.REDIS.name:
             ...
 
         inverted_index: dict = {}
@@ -64,13 +65,13 @@ class CustomIndex(BaseIndex):
 
         for uuid, payload in files:
             # Store document in the data store
-            if self.dstore == DataStore.CUSTOM.value:
+            if self.dstore == DataStore.CUSTOM.name:
                 with open(os.path.join(index_data_path, "documents", f"{uuid}.json"), "w") as f:
                     json.dump(payload, f)
-            elif self.dstore == DataStore.MONGODB.value:
+            elif self.dstore == DataStore.MONGODB.name:
                 # TODO: Implement MongoDB storage of files
                 ...
-            elif self.dstore == DataStore.REDIS.value:
+            elif self.dstore == DataStore.REDIS.name:
                 # TODO: Implement Redis storage of files
                 ...
 
@@ -92,17 +93,17 @@ class CustomIndex(BaseIndex):
         # TODO: Implement storage
 
         # Process based on IndexInfo type
-        if self.info == IndexInfo.BOOLEAN.value:
+        if self.info == IndexInfo.BOOLEAN.name:
             pass
         
-        elif self.info == IndexInfo.WORDCOUNT.value:
+        elif self.info == IndexInfo.WORDCOUNT.name:
             # Store position lists and word counts
             for word in inverted_index:
                 for doc_id in inverted_index[word]:
                     positions = inverted_index[word][doc_id]["positions"]
                     inverted_index[word][doc_id]["count"] = len(positions)
         
-        elif self.info == IndexInfo.TFIDF.value:
+        elif self.info == IndexInfo.TFIDF.name:
             # Calculate TF-IDF scores
             for word in inverted_index:
                 doc_freq = len(inverted_index[word])
@@ -120,7 +121,7 @@ class CustomIndex(BaseIndex):
         if self._check_index_exists(index_id):
             index_data_path: str = os.path.join(STORAGE_DIR, index_id)
 
-            if self.dstore == DataStore.CUSTOM.value:
+            if self.dstore == DataStore.CUSTOM.name:
                 index_metadata_path: str = os.path.join(index_data_path, "metadata.yaml")
 
                 # If metadata file exists, load and update it
@@ -139,11 +140,11 @@ class CustomIndex(BaseIndex):
                     with open(index_metadata_path, "w") as f:
                         yaml.dump(items, f, default_flow_style=False)
         
-            elif self.dstore == DataStore.MONGODB.value:
+            elif self.dstore == DataStore.MONGODB.name:
                 # TODO: Implement MongoDB metadata update
                 ...
             
-            elif self.dstore == DataStore.REDIS.value:
+            elif self.dstore == DataStore.REDIS.name:
                 # TODO: Implement Redis metadata update
                 ...
         
@@ -249,7 +250,7 @@ class CustomIndex(BaseIndex):
             return StatusCode.INDEX_NOT_FOUND
 
         index_data_path: str = os.path.join(STORAGE_DIR, index_id)
-        os.rmdir(index_data_path)  # Remove the index directory
+        shutil.rmtree(index_data_path)  # Remove the index directory and all its contents
         self._update_global_metadata("remove", index_id)
         return StatusCode.SUCCESS
 
@@ -259,14 +260,14 @@ class CustomIndex(BaseIndex):
 
         index_data_path: str = os.path.join(STORAGE_DIR, index_id)
 
-        if self.dstore == DataStore.CUSTOM.value:
+        if self.dstore == DataStore.CUSTOM.name:
             documents_path: str = os.path.join(index_data_path, "documents")
             all_files: list = os.listdir(documents_path)
             all_file_ids: list = [os.path.splitext(filename)[0] for filename in all_files] # Remove .json extension
             return all_file_ids
         
-        elif self.dstore == DataStore.MONGODB.value:
+        elif self.dstore == DataStore.MONGODB.name:
             ...
         
-        elif self.dstore == DataStore.REDIS.value:
+        elif self.dstore == DataStore.REDIS.name:
             ...
