@@ -103,7 +103,7 @@ python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file
 
 ### News Dataset
 
-- Source: https://github.com/Webhose/free-news-datasets  
+- Source: <https://github.com/Webhose/free-news-datasets>  
 - Approx. Size: 1.02 GB  
 - File Type(s): JSON (compressed .json / .json.gz in repository)  
 - Attributes:  
@@ -138,7 +138,7 @@ python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file
 
 ### Wikipedia Dataset (English)
 
-- Source: https://huggingface.co/datasets/wikimedia/wikipedia/tree/main/20231101.en  
+- Source: <https://huggingface.co/datasets/wikimedia/wikipedia/tree/main/20231101.en>  
 - Approx. Size: 11.6 GB  
 - File Type(s): Parquet (.parquet)  
 - Attributes:  
