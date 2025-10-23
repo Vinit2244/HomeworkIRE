@@ -95,8 +95,11 @@ python3 main.py # To run in auto mode add the flag "--mode auto". But manual mod
 # Manipulate the indices
 python3 main.py # To run in auto mode (from config file) add the flag "--mode config". But manual mode is recommended as it gives you more control over indexing your data
 
+# Generate queries
+python3 generate_queries.py --num_queries <N_QUERIES> --index_id <INDEX_ID> --output_file <PATH_TO_QUERIES_JSON>
+
 # Generate the query outputs from elasticsearch to compare against custom index
-python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file follows the same structure as given in query_sets/example.json
+python3 setup_queries.py --path <PATH_TO_QUERIES_JSON>
 ```
 
 ## About Datasets
@@ -155,3 +158,4 @@ python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> # Make sure the json file
   - Only considers the `text` section of a document
   - Omits punctuations
   - Case insensitive
+- Indexes cannot have same names (even when extension is different)

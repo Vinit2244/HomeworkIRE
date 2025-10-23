@@ -131,7 +131,7 @@ class NewsDataset(Dataset):
 
     def calculate_word_frequency(self) -> dict:
         freq: dict = defaultdict(int)
-
+        
         # Updates the overall frequency dictionary with the frequency from a single json file
         def update_freq_dict(f):
             text: str = json.load(f)["text"]

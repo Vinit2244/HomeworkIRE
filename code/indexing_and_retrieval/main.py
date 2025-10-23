@@ -47,9 +47,13 @@ def handle_create_index(idx: BaseIndex, _type: IndexType) -> None:
         return
 
     # Get index name and attributes to index
-    index_id: str = input(f"{Style.FG_YELLOW}Index name: {Style.RESET}").strip().lower()
+    index_id: str = input(f"{Style.FG_YELLOW}Index name (Do not include '.' in name): {Style.RESET}").strip().lower()
     if index_id == "":
         print(f"{Style.FG_RED}Index name cannot be empty.{Style.RESET}")
+        return
+    
+    if '.' in index_id:
+        print(f"{Style.FG_RED}Index name should not contain '.'. Please try again.{Style.RESET}")
         return
     
     available_attributes: List[str] = dataset_handler.get_attributes()
@@ -176,7 +180,7 @@ def menu() -> None:
                     settings.append("Operation: Delete Index")
                     print_settings()
 
-                    index_id: str = input(f"{Style.FG_YELLOW}Enter index name to delete: {Style.RESET}").strip()
+                    index_id: str = input(f"{Style.FG_YELLOW}Enter index name to delete (Enter full index name with '.'): {Style.RESET}").strip()
                     
                     if index_id == "":
                         print(f"{Style.FG_RED}Index name cannot be empty.{Style.RESET}")

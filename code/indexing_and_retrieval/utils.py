@@ -100,6 +100,7 @@ def ask_es_query(es_client, index_id: str, query: str, search_fields: List[str],
     '''
     Executes the given query on the specified Elasticsearch index and returns the response.
     '''
+    # TODO: Need to update this code to handle boolean type of queries
     query_clause = {
         "match": {
             search_field: query for search_field in search_fields

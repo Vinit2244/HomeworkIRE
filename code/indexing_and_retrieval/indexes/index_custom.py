@@ -1,13 +1,13 @@
 # ======================== IMPORTS ========================
-import math
-from .index_base import BaseIndex, IndexInfo, DataStore, Compression, QueryProc, Optimizations
-from utils import StatusCode, load_config
 import os
 import yaml
-from typing import Iterable
 import json
-from pathlib import Path
+import math
 import shutil
+from pathlib import Path
+from typing import Iterable
+from utils import StatusCode, load_config
+from .index_base import BaseIndex, IndexInfo, DataStore, Compression, QueryProc, Optimizations
 
 
 # ======================= GLOBALS ========================
@@ -46,6 +46,19 @@ class CustomIndex(BaseIndex):
         self.compr = compr
         self.optim = optim
         self.loaded_index = None
+
+        self.name_ext = f"{IndexInfo[info].value}{DataStore[dstore].value}{Compression[compr].value}{Optimizations[optim].value}{QueryProc[qproc].value}"
+
+    # Private Methods
+    def _add_ext_to_index_id(self, index_id: str) -> str | StatusCode:
+        if "." in index_id:
+            return index_id
+        
+        all_indices: list = METADATA.get("indices", [])
+        for idx in all_indices:
+            if idx.startswith(index_id + "."):
+                return idx
+        return StatusCode.INDEX_NOT_FOUND
 
     def _check_index_exists(self, index_id: str) -> bool:
         all_indices: list = METADATA.get("indices", [])
@@ -118,6 +131,7 @@ class CustomIndex(BaseIndex):
         return inverted_index, file_count
 
     def _update_index_metadata(self, index_id: str, items: dict) -> dict | StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         if self._check_index_exists(index_id):
             index_data_path: str = os.path.join(STORAGE_DIR, index_id)
 
@@ -152,6 +166,7 @@ class CustomIndex(BaseIndex):
             return StatusCode.INDEX_NOT_FOUND
 
     def _update_global_metadata(self, action: str, index_id: str) -> None:
+        index_id = self._add_ext_to_index_id(index_id)
         all_indices: list = METADATA.get("indices", [])
         
         if action == "add":
@@ -163,7 +178,9 @@ class CustomIndex(BaseIndex):
         with open(os.path.join(STORAGE_DIR, "metadata.yaml"), "w") as f:
             yaml.dump(METADATA, f, default_flow_style=False)
 
+    # Public Methods
     def get_index_info(self, index_id: str) -> dict | StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         if self._check_index_exists(index_id):
             index_data_path: str = os.path.join(STORAGE_DIR, index_id)
             index_metadata_path: str = os.path.join(index_data_path, "metadata.yaml")
@@ -182,6 +199,7 @@ class CustomIndex(BaseIndex):
         return all_indices
 
     def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> StatusCode:
+        index_id = f"{index_id}.{self.name_ext}"
         if self._check_index_exists(index_id):
             return StatusCode.INDEX_ALREADY_EXISTS
         
@@ -213,6 +231,7 @@ class CustomIndex(BaseIndex):
         return StatusCode.SUCCESS
 
     def load_index(self, index_id: str) -> StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         if self._check_index_exists(index_id):
             index_data_path: str = os.path.join(STORAGE_DIR, index_id)
             inverted_index_path: str = os.path.join(index_data_path, "inverted_index.json")
@@ -238,14 +257,17 @@ class CustomIndex(BaseIndex):
             return StatusCode.INDEX_NOT_FOUND
 
     def update_index(self, index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, dict]]) -> StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         # TODO: Implement index update functionality
         ...
 
     def query(self, query: str, index_id: str=None) -> str | StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         # TODO: Implement query functionality
         ...
 
     def delete_index(self, index_id: str) -> StatusCode:
+        index_id = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id):
             return StatusCode.INDEX_NOT_FOUND
 
@@ -255,6 +277,7 @@ class CustomIndex(BaseIndex):
         return StatusCode.SUCCESS
 
     def list_indexed_files(self, index_id: str) -> Iterable[str]:
+        index_id = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id):
             return StatusCode.INDEX_NOT_FOUND
 
