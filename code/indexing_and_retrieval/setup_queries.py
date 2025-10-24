@@ -26,17 +26,17 @@ def query_and_update(file_path: str) -> None:
     """
 
     config = load_config()
-    ES_HOST     : str = config['elasticsearch']['host']
-    ES_PORT     : int = config['elasticsearch']['port']
-    ES_SCHEME   : str = config['elasticsearch']['scheme']
-    MAX_RESULTS : int = config.get("max_results", 50)
-    SEARCH_FIELD: str = config.get("search_field", "text")
+    ES_HOST      : str = config['elasticsearch']['host']
+    ES_PORT      : int = config['elasticsearch']['port']
+    ES_SCHEME    : str = config['elasticsearch']['scheme']
+    MAX_RESULTS  : int = config.get("max_results", 50)
+    SEARCH_FIELDS: str = config.get("search_fields", ["text"])
 
     MAX_NUM_DOCUMENTS     : int = config.get("max_num_documents", -1)
     PREPROCESSING_SETTINGS: dict = config.get("preprocessing", {})
     ATTRIBUTES_INDEXED    : list = config["index"].get("attributes", [])
 
-    print(f"{Style.FG_YELLOW}Using \n\tElasticsearch Host: {ES_HOST}, \n\tPort: {ES_PORT}, \n\tScheme: {ES_SCHEME}, \n\tMax Results: {MAX_RESULTS}, \n\tSearch Field: {SEARCH_FIELD}{Style.RESET}. \nTo change, modify config.yaml file.\n")
+    print(f"{Style.FG_YELLOW}Using \n\tElasticsearch Host: {ES_HOST}, \n\tPort: {ES_PORT}, \n\tScheme: {ES_SCHEME}, \n\tMax Results: {MAX_RESULTS}, \n\tSearch FieldsW: {SEARCH_FIELDS}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
     # Connect to Elasticsearch
     print(f"Connecting to Elasticsearch at {ES_SCHEME}://{ES_HOST}:{ES_PORT}...")
@@ -56,7 +56,7 @@ def query_and_update(file_path: str) -> None:
     # Read and load the JSON file
     data = None
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
             data = json.load(f)
         print(f"{Style.FG_GREEN}Successfully loaded {len(data['queries'])} queries from '{file_path}'.{Style.RESET}")
     except Exception as e:
@@ -70,7 +70,7 @@ def query_and_update(file_path: str) -> None:
     data["preprocessing_settings"] = PREPROCESSING_SETTINGS
 
     # Store the search field used
-    data["search_field"] = SEARCH_FIELD
+    data["search_fields"] = SEARCH_FIELDS
 
     # Store the attributes that were indexed
     data["attributes_indexed"] = ATTRIBUTES_INDEXED
@@ -89,7 +89,7 @@ def query_and_update(file_path: str) -> None:
         query_text = item["query"]
         print(f"  ({i+1}/{len(data['queries'])}) Searching for: '{query_text[:70]}...'")
 
-        res = ask_es_query(es_client, index_id, query_text, SEARCH_FIELD, MAX_RESULTS, False)
+        res = ask_es_query(es_client, index_id, query_text, SEARCH_FIELDS, MAX_RESULTS, False)
 
         if isinstance(res, StatusCode):
             print(f"{Style.FG_RED}Failed to execute query '{query_text}'.{Style.RESET}")

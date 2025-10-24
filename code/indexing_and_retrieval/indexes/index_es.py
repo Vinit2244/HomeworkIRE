@@ -65,10 +65,25 @@ class ESIndex(BaseIndex):
 
     def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> StatusCode:
         # Create new index if it doesn't exist
+        mapping = {
+            "mappings": {
+                "properties": {
+                    MAPPING_FIELD: {  # <-- Use the variable, not "content"
+                        "type": "text",
+                        "analyzer": "standard",
+                        "fields": {
+                            "keyword": {"type": "keyword", "ignore_above": 256}
+                        }
+                    } for MAPPING_FIELD in SEARCH_FIELDS
+                    # Add other fields like "title" here if you index them
+                }
+            }
+        }
+
         if self.es_client.indices.exists(index=index_id):
             return StatusCode.INDEX_ALREADY_EXISTS
         else:
-            self.es_client.indices.create(index=index_id)
+            self.es_client.indices.create(index=index_id, body=mapping)
 
         # Helper function to resolve if the source is a generator function or an iterable
         def resolve_iterable(source):
