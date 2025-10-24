@@ -132,39 +132,35 @@ class CustomIndex(BaseIndex):
 
     def _update_index_metadata(self, index_id: str, items: dict) -> dict | StatusCode:
         index_id = self._add_ext_to_index_id(index_id)
-        if self._check_index_exists(index_id):
-            index_data_path: str = os.path.join(STORAGE_DIR, index_id)
+        index_data_path: str = os.path.join(STORAGE_DIR, index_id)
 
-            if self.dstore == DataStore.CUSTOM.name:
-                index_metadata_path: str = os.path.join(index_data_path, "metadata.yaml")
+        if self.dstore == DataStore.CUSTOM.name:
+            index_metadata_path: str = os.path.join(index_data_path, "metadata.yaml")
 
-                # If metadata file exists, load and update it
-                if os.path.exists(index_metadata_path):
-                    with open(index_metadata_path, "r") as f:
-                        index_info: dict = yaml.safe_load(f)
-                    
-                    # Update the metadata with new items
-                    index_info.update(items)
-
-                    with open(index_metadata_path, "w") as f:
-                        yaml.dump(index_info, f, default_flow_style=False)
+            # If metadata file exists, load and update it
+            if os.path.exists(index_metadata_path):
+                with open(index_metadata_path, "r") as f:
+                    index_info: dict = yaml.safe_load(f)
                 
-                # If metadata file doesn't exist, create it
-                else:
-                    with open(index_metadata_path, "w") as f:
-                        yaml.dump(items, f, default_flow_style=False)
-        
-            elif self.dstore == DataStore.MONGODB.name:
-                # TODO: Implement MongoDB metadata update
-                ...
-            
-            elif self.dstore == DataStore.REDIS.name:
-                # TODO: Implement Redis metadata update
-                ...
-        
-        else:
-            return StatusCode.INDEX_NOT_FOUND
+                # Update the metadata with new items
+                index_info.update(items)
 
+                with open(index_metadata_path, "w") as f:
+                    yaml.dump(index_info, f, default_flow_style=False)
+            
+            # If metadata file doesn't exist, create it
+            else:
+                with open(index_metadata_path, "w") as f:
+                    yaml.dump(items, f, default_flow_style=False)
+    
+        elif self.dstore == DataStore.MONGODB.name:
+            # TODO: Implement MongoDB metadata update
+            ...
+        
+        elif self.dstore == DataStore.REDIS.name:
+            # TODO: Implement Redis metadata update
+            ...
+    
     def _update_global_metadata(self, action: str, index_id: str) -> None:
         index_id = self._add_ext_to_index_id(index_id)
         all_indices: list = METADATA.get("indices", [])
@@ -188,7 +184,8 @@ class CustomIndex(BaseIndex):
             if os.path.exists(index_metadata_path):
                 with open(index_metadata_path, "r") as f:
                     index_info: dict = yaml.safe_load(f)
-                return index_info
+                    final_info = {index_id.split(".")[0] : index_info}
+                return final_info
         
         else:
             return StatusCode.ERROR_ACCESSING_INDEX
