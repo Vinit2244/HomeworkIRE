@@ -9,6 +9,7 @@ import shutil
 from utils import Style
 from pathlib import Path
 from typing import Iterable
+from rocksdict import Rdict
 from query_parser import QueryParser
 from utils import StatusCode, load_config
 from .index_base import BaseIndex, IndexInfo, DataStore, Compression, QueryProc, Optimizations
@@ -46,7 +47,7 @@ MAX_RESULTS: int = config.get("max_results", 50)
 
 # ======================== CLASSES ========================
 class CustomIndex(BaseIndex):
-    def __init__(self, core: str, info: str="NONE", dstore: str="NONE", qproc: str="NONE", compr: str="NONE", optim: str="NONE"):
+    def __init__(self, core: str, info: str="BOOLEAN", dstore: str="CUSTOM", qproc: str="NONE", compr: str="NONE", optim: str="NONE"):
         super().__init__(core, info, dstore, qproc, compr, optim)
         self.core = core
         self.info = info
@@ -58,19 +59,24 @@ class CustomIndex(BaseIndex):
 
         self.name_ext = f"{IndexInfo[info].value}{DataStore[dstore].value}{Compression[compr].value}{Optimizations[optim].value}{QueryProc[qproc].value}"
 
+        # Redis
         self.redis_client = None
         if self.dstore == DataStore.REDIS.name:
             try:
                 self.redis_client = redis.Redis(
-                    host=REDIS_HOST, 
-                    port=REDIS_PORT, 
-                    db=REDIS_DB, 
+                    host=REDIS_HOST,
+                    port=REDIS_PORT,
+                    db=REDIS_DB,
                     decode_responses=True
                 )
                 self.redis_client.ping() # Test connection
             except Exception as e:
                 print(f"Failed to connect to Redis: {e}")
                 self.redis_client = None
+
+        # RocksDB
+        self.index_db_handle: Rdict = None
+        self.doc_store_handle: Rdict = None
 
     # Private Methods
     def _add_ext_to_index_id(self, index_id: str) -> str | StatusCode:
@@ -88,9 +94,14 @@ class CustomIndex(BaseIndex):
         return index_id in all_indices
 
     def _build_inverted_index(self, files: Iterable[tuple[str, dict]], index_data_path: str, index_id: str) -> dict:
+        doc_store: Rdict = None
+
         # Create place for storing documents if using custom data store
         if self.dstore == DataStore.CUSTOM.name:
             os.mkdir(os.path.join(index_data_path, "documents")) # Folder for storing all the documents
+        elif self.dstore == DataStore.ROCKSDB.name:
+            doc_store_path: str = os.path.join(index_data_path, "doc_store")
+            doc_store = Rdict(doc_store_path)
 
         inverted_index: dict = {}
         file_count: int = 0
@@ -101,8 +112,7 @@ class CustomIndex(BaseIndex):
                 with open(os.path.join(index_data_path, "documents", f"{uuid}.json"), "w") as f:
                     json.dump(payload, f)
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB storage of files
-                ...
+                doc_store[uuid.encode('utf-8')] = json.dumps(payload).encode('utf-8')
             elif self.dstore == DataStore.REDIS.name:
                 if self.redis_client:
                     self.redis_client.hset(f"{index_id}:documents", uuid, json.dumps(payload))
@@ -119,6 +129,9 @@ class CustomIndex(BaseIndex):
                     inverted_index[word][uuid]["positions"].append(position)
                 
             file_count += 1
+        
+        if doc_store:
+            doc_store.close()
 
         # TODO: Implement optimisations
         # TODO: Implement compression
@@ -169,8 +182,15 @@ class CustomIndex(BaseIndex):
                 yaml.dump(current_info, f, default_flow_style=False)
     
         elif self.dstore == DataStore.ROCKSDB.name:
-            # TODO: Implement RocksDB metadata update
-            ...
+            index_db_path = os.path.join(index_data_path, "index_db")
+            try:
+                with Rdict(index_db_path) as db:
+                    meta_bytes = db.get(b'metadata')
+                    current_info = json.loads(meta_bytes.decode('utf-8')) if meta_bytes else {}
+                    current_info.update(items)
+                    db[b'metadata'] = json.dumps(current_info).encode('utf-8')
+            except Exception as e:
+                return StatusCode.ERROR_ACCESSING_INDEX
         
         elif self.dstore == DataStore.REDIS.name:
             if not self.redis_client:
@@ -287,8 +307,10 @@ class CustomIndex(BaseIndex):
                     index_info = yaml.safe_load(f)
             
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB metadata retrieval
-                ...
+                index_db_path = os.path.join(index_data_path, "index_db")
+                with Rdict(index_db_path) as db:
+                    meta_bytes = db[b'metadata'] # Use [] for direct access, fails if not found
+                    index_info = json.loads(meta_bytes.decode('utf-8'))
             
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
@@ -329,8 +351,7 @@ class CustomIndex(BaseIndex):
             if self.dstore == DataStore.CUSTOM.name:
                 os.makedirs(index_data_path, exist_ok=True) 
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB storage setup
-                ...
+                os.makedirs(index_data_path, exist_ok=True)
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
                     return StatusCode.ERROR_ACCESSING_INDEX
@@ -348,8 +369,9 @@ class CustomIndex(BaseIndex):
                 with open(os.path.join(index_data_path, "inverted_index.json"), "w") as f:
                     json.dump(inverted_index, f)
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB storage of inverted index
-                ...
+                index_db_path = os.path.join(index_data_path, "index_db")
+                with Rdict(index_db_path) as db:
+                    db[b'inverted_index'] = json.dumps(inverted_index).encode('utf-8')
             elif self.dstore == DataStore.REDIS.name:
                 self.redis_client.set(f"{index_id}:inverted_index", json.dumps(inverted_index))
 
@@ -385,8 +407,17 @@ class CustomIndex(BaseIndex):
                     self.loaded_index = json.load(f)
 
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB index loading
-                ...
+                index_db_path = os.path.join(index_data_path, "index_db")
+                doc_store_path = os.path.join(index_data_path, "doc_store")
+                
+                self.index_db_handle = Rdict(index_db_path)
+                self.doc_store_handle = Rdict(doc_store_path)
+                
+                meta_bytes = self.index_db_handle[b'metadata']
+                index_info = json.loads(meta_bytes.decode('utf-8'))
+
+                index_bytes = self.index_db_handle[b'inverted_index']
+                self.loaded_index = json.loads(index_bytes.decode('utf-8'))
                         
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
@@ -466,6 +497,12 @@ class CustomIndex(BaseIndex):
                     doc_path = os.path.join(index_data_path, "documents", f"{doc_id}.json")
                     with open(doc_path, "r") as f:
                         doc_source = json.load(f)
+
+                elif self.dstore == DataStore.ROCKSDB.name:
+                    if self.doc_store_handle:
+                        doc_bytes = self.doc_store_handle.get(doc_id.encode('utf-8'))
+                        if doc_bytes:
+                            doc_source = json.loads(doc_bytes.decode('utf-8'))
                 
                 elif self.dstore == DataStore.REDIS.name:
                     if self.redis_client:
@@ -505,8 +542,15 @@ class CustomIndex(BaseIndex):
                 shutil.rmtree(index_data_path) 
             
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB index deletion
-                ...
+                if self.index_db_handle:
+                    self.index_db_handle.close()
+                    self.index_db_handle = None
+                if self.doc_store_handle:
+                    self.doc_store_handle.close()
+                    self.doc_store_handle = None
+                
+                # Rdict databases are directories, so just remove the parent
+                shutil.rmtree(index_data_path)
             
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
@@ -545,8 +589,16 @@ class CustomIndex(BaseIndex):
                 return all_file_ids
             
             elif self.dstore == DataStore.ROCKSDB.name:
-                # TODO: Implement RocksDB indexed files listing
-                ...
+                doc_store_path = os.path.join(index_data_path, "doc_store")
+                if not os.path.exists(doc_store_path):
+                    return []
+                
+                # Use a handle if it's open, otherwise open a temp one
+                if self.doc_store_handle:
+                    return [key.decode('utf-8') for key in self.doc_store_handle.keys()]
+                else:
+                    with Rdict(doc_store_path) as db:
+                        return [key.decode('utf-8') for key in db.keys()]
             
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:

@@ -186,6 +186,13 @@ def menu() -> None:
                         print(f"{Style.FG_RED}Index name cannot be empty.{Style.RESET}")
                         wait_for_enter()
                         continue
+                    
+                    # Load the index before deleting (to load the settings)
+                    status = idx.load_index(index_id)
+                    if status != StatusCode.SUCCESS:
+                        print(f"{Style.FG_RED}Error accessing index '{index_id}'.{Style.RESET}")
+                        wait_for_enter()
+                        continue
 
                     info = idx.delete_index(index_id)
 
@@ -220,6 +227,13 @@ def menu() -> None:
                         print(f"{Style.FG_RED}Index name cannot be empty.{Style.RESET}\n")
                         wait_for_enter()
                         continue
+                    
+                    # Load the index before getting info (to load the settings)
+                    status = idx.load_index(index_id)
+                    if status != StatusCode.SUCCESS:
+                        print(f"{Style.FG_RED}Error accessing index '{index_id}'.{Style.RESET}\n")
+                        wait_for_enter()
+                        continue
 
                     info = idx.get_index_info(index_id)
 
@@ -242,9 +256,9 @@ def menu() -> None:
                     print_settings()
 
                     index_id = input(f"{Style.FG_MAGENTA}Input index name to query (leave it empty to search across all indexes): {Style.RESET}").strip().lower()
-                    success = idx.load_index(index_id)
+                    status = idx.load_index(index_id)
                     
-                    if success != StatusCode.SUCCESS:
+                    if status != StatusCode.SUCCESS:
                         print(f"{Style.FG_RED}Failed to load index '{index_id}'.{Style.RESET}\n")
                         wait_for_enter()
                         continue
@@ -268,6 +282,19 @@ def menu() -> None:
                     print_settings()
 
                     index_id: str = input(f"{Style.FG_YELLOW}Enter index name to list files: {Style.RESET}").strip()
+                    
+                    if index_id == "":
+                        print(f"{Style.FG_RED}Index name cannot be empty.{Style.RESET}")
+                        wait_for_enter()
+                        continue
+                    
+                    # Load the index before listing files (to load the settings)
+                    status = idx.load_index(index_id)
+                    if status != StatusCode.SUCCESS:
+                        print(f"{Style.FG_RED}Error accessing index '{index_id}'.{Style.RESET}")
+                        wait_for_enter()
+                        continue
+
                     indexed_files = idx.list_indexed_files(index_id)
                     
                     console = Console()

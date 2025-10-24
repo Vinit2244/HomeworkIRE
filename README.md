@@ -79,6 +79,12 @@
     docker stop my-redis-server
     ```
 
+6. Install the C++ RocksDB Library (MacOS):
+
+    ```shell
+    brew install rocksdb
+    ```
+
 ---
 
 ## Assignment 1 - Indexing and Retrieval

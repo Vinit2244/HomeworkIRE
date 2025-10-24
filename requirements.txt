@@ -28,6 +28,7 @@ PyYAML==6.0.3
 redis==7.0.0
 regex==2025.9.18
 rich==14.2.0
+rocksdict==0.3.27
 seaborn==0.13.2
 six==1.17.0
 tqdm==4.67.1

@@ -37,7 +37,7 @@ index:
   attributes: [uuid, text] # Attributes to be indexed from the dataset (Make sure to keep the unique id as first attribute)
   
   info: TFIDF    # Kind of information indexed: BOOLEAN, WORDCOUNT or TFIDF
-  dstore: REDIS   # Datastore choice: CUSTOM, ROCKSDB or REDIS
+  dstore: ROCKSDB   # Datastore choice: CUSTOM, ROCKSDB or REDIS
   compr: NONE      # Compression choice: NONE, CODE or CLIB
   optim: NONE      # Optimisation choice: NONE, SKIPPING, THRESHOLDING or EARLYSTOPPING
   qproc: TERM      # Query Processing choice: TERM or DOC
