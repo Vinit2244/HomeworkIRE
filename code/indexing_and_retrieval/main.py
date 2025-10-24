@@ -258,7 +258,7 @@ def menu() -> None:
                         if query.upper() == "EXIT":
                             break
                         
-                        results = idx.query(query)
+                        results = idx.query(query, index_id)
                         pretty_print_query_results(results)
                         wait_for_enter()
 

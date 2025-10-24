@@ -49,17 +49,35 @@
     # Please copy the generated username, password and API key and store them in .env file.
     ```
 
-To start the container if already exists:
+    To start the container if already exists:
 
-```shell
-docker start es-local-dev && docker start kibana-local-settings && docker start kibana-local-dev
-```
+    ```shell
+    docker start es-local-dev && docker start kibana-local-settings && docker start kibana-local-dev
+    ```
 
-To stop the container once done:
+    To stop the container once done:
 
-```shell
-docker stop kibana-local-dev && docker stop es-local-dev
-```
+    ```shell
+    docker stop kibana-local-dev && docker stop es-local-dev
+    ```
+
+5. Run a local server of Redis using docker:
+
+    ```shell
+    docker run -d -p 6379:6379 --name my-redis-server redis:latest
+    ```
+
+    To start the container if already exists:
+
+    ```shell
+    docker start my-redis-server
+    ```
+
+    To stop the container once done:
+
+    ```shell
+    docker stop my-redis-server
+    ```
 
 ---
 
@@ -159,3 +177,4 @@ python3 setup_queries.py --path <PATH_TO_QUERIES_JSON>
   - Omits punctuations
   - Case insensitive
 - Indexes cannot have same names (even when extension is different)
+- Queries run will be preprocessed according to how the data is preprocessed (will implement preprocessing queries internally later)

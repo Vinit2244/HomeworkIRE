@@ -15,7 +15,7 @@ class IndexInfo(Enum):
 class DataStore(Enum):
     NONE   : int = 0 # Just a placeholder
     CUSTOM : int = 1
-    MONGODB: int = 2
+    ROCKSDB: int = 2
     REDIS  : int = 3
 
 

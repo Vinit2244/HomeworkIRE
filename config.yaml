@@ -24,6 +24,11 @@ elasticsearch:
   scheme: http     # https for secure connection, http for local connection
   chunk_size: 500  # Number of documents to index in one bulk operation
 
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+
 index:
   core: ESIndex    # Options: "ESIndex" (Elasticsearch), "CustomIndex" (Custom Index)
   dataset: Wikipedia    # Options: "News" (News Dataset), "Wikipedia" (Wikipedia Dataset)
@@ -32,7 +37,7 @@ index:
   attributes: [uuid, text] # Attributes to be indexed from the dataset (Make sure to keep the unique id as first attribute)
   
   info: TFIDF    # Kind of information indexed: BOOLEAN, WORDCOUNT or TFIDF
-  dstore: CUSTOM   # Datastore choice: CUSTOM, MONGODB or REDIS
+  dstore: REDIS   # Datastore choice: CUSTOM, ROCKSDB or REDIS
   compr: NONE      # Compression choice: NONE, CODE or CLIB
   optim: NONE      # Optimisation choice: NONE, SKIPPING, THRESHOLDING or EARLYSTOPPING
   qproc: TERM      # Query Processing choice: TERM or DOC
