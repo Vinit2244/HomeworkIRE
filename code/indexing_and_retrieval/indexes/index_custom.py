@@ -1,14 +1,15 @@
 # ======================== IMPORTS ========================
 import os
-import re
 import yaml
 import json
 import math
+import zlib
 import redis
 import shutil
 from utils import Style
 from pathlib import Path
 from typing import Iterable
+from .encoder import Encoder
 from rocksdict import Rdict
 from query_parser import QueryParser
 from utils import StatusCode, load_config
@@ -54,6 +55,7 @@ class CustomIndex(BaseIndex):
         self.dstore = dstore
         self.qproc = qproc
         self.compr = compr
+        self.encoder = Encoder()
         self.optim = optim
         self.loaded_index = None
 
@@ -94,8 +96,6 @@ class CustomIndex(BaseIndex):
         return index_id in all_indices
 
     def _build_inverted_index(self, files: Iterable[tuple[str, dict]], index_data_path: str, index_id: str) -> dict:
-        doc_store: Rdict = None
-
         # Create place for storing documents if using custom data store
         if self.dstore == DataStore.CUSTOM.name:
             os.mkdir(os.path.join(index_data_path, "documents")) # Folder for storing all the documents
@@ -130,12 +130,8 @@ class CustomIndex(BaseIndex):
                 
             file_count += 1
         
-        if doc_store:
+        if self.dstore == DataStore.ROCKSDB.name and doc_store:
             doc_store.close()
-
-        # TODO: Implement optimisations
-        # TODO: Implement compression
-        # TODO: Implement storage
 
         # Process based on IndexInfo type
         if self.info == IndexInfo.BOOLEAN.name:
@@ -159,6 +155,8 @@ class CustomIndex(BaseIndex):
                     tf = len(positions)
                     tfidf = tf * idf
                     inverted_index[word][doc_id]["tfidf"] = tfidf
+
+        # TODO: Implement optimisations
 
         return inverted_index, file_count
 
@@ -219,8 +217,24 @@ class CustomIndex(BaseIndex):
             yaml.dump(METADATA, f, default_flow_style=False)
 
     def _check_phrase_in_doc(self, doc_id: str, words: list, index: dict) -> bool:
+        def get_positions(word: str, doc_id: str) -> list:
+            postings = index.get(word, {}).get(doc_id, {})
+            if not postings:
+                return []
+            
+            pos_data = postings.get("positions", [])
+
+            if self.compr == Compression.CODE.name:
+                if not pos_data:
+                    return []
+                varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
+                gaps = self.encoder.varbyte_decode(varbyte_blob)
+                return self.encoder.gap_decode(gaps)
+            else:
+                return pos_data
+        
         # Get all positions for the first word in this doc
-        first_word_positions = index.get(words[0], {}).get(doc_id, {}).get("positions", [])
+        first_word_positions = get_positions(words[0], doc_id)
         if not first_word_positions:
             return False
 
@@ -291,6 +305,36 @@ class CustomIndex(BaseIndex):
 
         raise ValueError(f"Unknown query node: {node}")
 
+    def _compress(self, inverted_index: dict) -> bytes:
+        # CODE Compression
+        if self.compr == Compression.CODE.name:
+            for term in inverted_index:
+                for doc_id in inverted_index[term]:
+                    positions = inverted_index[term][doc_id]["positions"]
+                    if positions:
+                        # Gap encode
+                        gaps = self.encoder.gap_encode(positions)
+                        # VarByte encode
+                        vb_encoded = self.encoder.varbyte_encode(gaps)
+                        inverted_index[term][doc_id]["positions"] = vb_encoded.hex() # Store as hex string for JSON compatibility
+        
+        # Serialize the index into bytes
+        data_bytes = json.dumps(inverted_index).encode('utf-8')
+
+        # CLIB Compression
+        if self.compr == Compression.CLIB.name:
+            data_bytes = zlib.compress(data_bytes)
+
+        return data_bytes
+
+    def _decompress(self, compr: str, data_bytes: bytes) -> dict:
+        if compr == Compression.CLIB.name:
+            data_bytes = zlib.decompress(data_bytes)
+
+        # Deserialize from JSON
+        # For CODE decompression, we will handle it during query time as needed
+        return json.loads(data_bytes.decode('utf-8'))
+        
     # Public Methods
     def get_index_info(self, index_id: str) -> dict | StatusCode:
         index_id_full = self._add_ext_to_index_id(index_id)
@@ -363,17 +407,20 @@ class CustomIndex(BaseIndex):
 
             # Build index and store documents
             inverted_index, n_docs_indexed = self._build_inverted_index(files, index_data_path, index_id)
+
+            # Compression
+            compressed_inv_idx: bytes = self._compress(inverted_index)
             
             # Save inverted index
             if self.dstore == DataStore.CUSTOM.name:
-                with open(os.path.join(index_data_path, "inverted_index.json"), "w") as f:
-                    json.dump(inverted_index, f)
+                with open(os.path.join(index_data_path, "inverted_index.bin"), "wb") as f:
+                    f.write(compressed_inv_idx)
             elif self.dstore == DataStore.ROCKSDB.name:
                 index_db_path = os.path.join(index_data_path, "index_db")
                 with Rdict(index_db_path) as db:
-                    db[b'inverted_index'] = json.dumps(inverted_index).encode('utf-8')
+                    db[b'inverted_index'] = compressed_inv_idx
             elif self.dstore == DataStore.REDIS.name:
-                self.redis_client.set(f"{index_id}:inverted_index", json.dumps(inverted_index))
+                self.redis_client.set(f"{index_id}:inverted_index", compressed_inv_idx)
 
             # Update metadata with document count
             self._update_index_metadata(index_id, {"documents_indexed": n_docs_indexed})
@@ -397,14 +444,16 @@ class CustomIndex(BaseIndex):
 
         try:
             index_info = {}
+            index_bytes: bytes = None
+
             if self.dstore == DataStore.CUSTOM.name:
-                inverted_index_path: str = os.path.join(index_data_path, "inverted_index.json")
+                inverted_index_path: str = os.path.join(index_data_path, "inverted_index.bin")
                 index_metadata_path: str = os.path.join(index_data_path, "metadata.yaml")
 
                 with open(index_metadata_path, "r") as f:
                     index_info: dict = yaml.safe_load(f)
-                with open(inverted_index_path, "r") as f:
-                    self.loaded_index = json.load(f)
+                with open(inverted_index_path, "rb") as f:
+                    index_bytes = f.read()
 
             elif self.dstore == DataStore.ROCKSDB.name:
                 index_db_path = os.path.join(index_data_path, "index_db")
@@ -417,7 +466,6 @@ class CustomIndex(BaseIndex):
                 index_info = json.loads(meta_bytes.decode('utf-8'))
 
                 index_bytes = self.index_db_handle[b'inverted_index']
-                self.loaded_index = json.loads(index_bytes.decode('utf-8'))
                         
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
@@ -426,8 +474,13 @@ class CustomIndex(BaseIndex):
                 meta_json = self.redis_client.get(f"{index_id}:metadata")
                 index_info = json.loads(meta_json)
 
-                index_json = self.redis_client.get(f"{index_id}:inverted_index")
-                self.loaded_index = json.loads(index_json)
+                byte_redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+                index_bytes = byte_redis.get(f"{index_id}:inverted_index")
+
+            if not index_bytes:
+                return StatusCode.ERROR_ACCESSING_INDEX
+            
+            self.loaded_index = self._decompress(index_info.get("compression"), index_bytes)
             
             # Populate self.info from the loaded metadata
             self.info = index_info.get("info", "NONE")

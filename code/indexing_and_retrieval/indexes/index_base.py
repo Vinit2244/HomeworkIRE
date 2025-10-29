@@ -20,9 +20,9 @@ class DataStore(Enum):
 
 
 class Compression(Enum):
-    NONE: int = 1
-    CODE: int = 2
-    CLIB: int = 3
+    NONE: int = 0
+    CODE: int = 1
+    CLIB: int = 2
 
 
 class Optimizations(Enum):

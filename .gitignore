@@ -4,3 +4,4 @@ env/
 .env
 *elastic-start-local/
 storage/
+.DS_Store
