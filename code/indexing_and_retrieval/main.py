@@ -6,17 +6,13 @@ from tqdm import tqdm
 from typing import List
 from rich.table import Table
 from rich.console import Console
-from rich.progress import Progress
 from indexes import ESIndex, CustomIndex, BaseIndex
+from utils import Style, clear_screen, wait_for_enter
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
-from utils import Style, StatusCode, load_config, clear_screen, wait_for_enter, IndexType, DatasetType
+from constants import ES_HOST, ES_PORT, ES_SCHEME, IndexType, DatasetType, StatusCode, INDEX_SETTINGS
 
 
 # ======================= GLOBALS ========================
-config: dict = load_config()
-host: str   = config["elasticsearch"]["host"]
-port: int   = config["elasticsearch"]["port"]
-scheme: str = config["elasticsearch"]["scheme"]
 settings: List[str] = []
 
 
@@ -130,16 +126,15 @@ def menu() -> None:
 
         match _type:
             case IndexType.ESIndex:
-                print(f"{Style.FG_YELLOW}Using Elasticsearch Index at {host}:{port} with scheme {scheme}{Style.RESET}. To change, modify config.yaml file.\n")
-                idx = ESIndex(host, port, scheme, _type.name)
+                print(f"{Style.FG_YELLOW}Using Elasticsearch Index at {ES_HOST}:{ES_PORT} with scheme {ES_SCHEME}{Style.RESET}. To change, modify config.yaml file.\n")
+                idx = ESIndex(ES_HOST, ES_PORT, ES_SCHEME, _type.name)
                 settings.append("Index Type: ESIndex")
             case IndexType.CustomIndex:
-                index_settings: dict = config.get("index")
-                info: str = index_settings.get("info", "NONE")
-                dstore: str = index_settings.get("dstore", "NONE")
-                qproc: str = index_settings.get("qproc", "NONE")
-                compr: str = index_settings.get("compr", "NONE")
-                optim: str = index_settings.get("optim", "NONE")
+                info: str = INDEX_SETTINGS.get("info", "NONE")
+                dstore: str = INDEX_SETTINGS.get("dstore", "NONE")
+                qproc: str = INDEX_SETTINGS.get("qproc", "NONE")
+                compr: str = INDEX_SETTINGS.get("compr", "NONE")
+                optim: str = INDEX_SETTINGS.get("optim", "NONE")
                 print(f"{Style.FG_YELLOW}Using Custom Index with settings \n\tInfo: {info}, \n\tData Store: {dstore}, \n\tQuery Processor: {qproc}, \n\tCompression: {compr}, \n\tOptimization: {optim}.{Style.RESET} \nTo change, modify config.yaml file.\n")
                 idx = CustomIndex(_type.name, info, dstore, qproc, compr, optim)
                 settings.append("Index Type: CustomIndex")
@@ -337,56 +332,11 @@ def print_settings() -> None:
     print()
 
 
-def create_es_index(args: dict) -> None:
-    print(f"{Style.FG_YELLOW}Initializing Elasticsearch Index...{Style.RESET}")
-    idx = ESIndex(host, port, scheme, args["core"])
-
-    # Generating index ID
-    print(f"{Style.FG_YELLOW}Creating index...{Style.RESET}")
-    
-
-    # Selecting dataset handler and validating
-    if args["dataset"] == DatasetType.News.name:
-        dataset_handler = get_news_dataset_handler()
-    elif args["dataset"] == DatasetType.Wikipedia.name:
-        dataset_handler = get_wikipedia_dataset_handler()
-    else:
-        raise ValueError("Invalid dataset specified in the configuration.")
-
-    # Creating the index
-    index_id: str = generate_index_id(args["core"], args["dataset"], args.get("version", "v1.0"))
-    status: int = idx.create_index(index_id, dataset_handler.get_files(args["attributes"]))
-        
-    if status == StatusCode.SUCCESS:
-        print(f"{Style.FG_GREEN}Index '{index_id}' created successfully.{Style.RESET}")
-    elif status == StatusCode.INDEXING_FAILED:
-        print(f"{Style.FG_RED}Indexing failed for index '{index_id}'.{Style.RESET}")
-    elif status == StatusCode.INDEX_ALREADY_EXISTS:
-        print(f"{Style.FG_RED}Index '{index_id}' already exists.{Style.RESET}")
-
-
-def create_custom_index(args: dict) -> None:
-    idx = CustomIndex(args["core"], args["info"], args["dstore"], args["qproc"], args["compr"], args["optim"])
-
-    if args["dataset"] == "news":
-        ...
-    elif args["dataset"] == "wikipedia":
-        ...
-    else:
-        raise ValueError("Invalid dataset specified in the configuration.")
-
-
 # ========================= MAIN ==========================
-def main(params, mode: str) -> None:
+def main(mode: str) -> None:
     if mode == "config":
-        if params["core"] == "ESIndex":
-            create_es_index(params)
-        elif params["core"] == "CustomIndex":
-            # TODO: After implementing CustomIndex, uncomment the line below
-            # create_custom_index(params)
-            ...
-        else:
-            raise ValueError("Invalid index core/type specified in the configuration.")
+        # TODO: Implement config (auto) mode
+        ...
     elif mode == "manual":
         menu()
     else:
@@ -403,4 +353,4 @@ if __name__ == "__main__":
         print(f"{Style.FG_YELLOW}Yet to be implemented, please run in manual mode...{Style.RESET}")
         exit(0)
 
-    main(config["index"], args.mode)
+    main(args.mode)

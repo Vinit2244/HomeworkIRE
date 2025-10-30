@@ -12,7 +12,7 @@ preprocessing:
   stemming:
     algorithm: porter # porter, lancaster, snowball, null (no stemming)
   lemmatization:
-    algorithm: wordnet # wordnet, null (no lemmatization)
+    algorithm: null # wordnet, null (no lemmatization)
   lowercase: true
   remove_punctuation: true
   remove_numbers: true

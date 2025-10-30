@@ -1,28 +1,28 @@
 # ======================== IMPORTS ========================
-import utils
-from utils import Style
 from typing import List
+from utils import load_config, Style
+from constants import MAX_NUM_DOCUMENTS, PREPROCESSING_SETTINGS
 from dataset_managers import NewsDataset, WikipediaDataset
 
 
 # ======================= FUNCTIONS =======================
 def preprocess_data(config: dict) -> None:
     # Lower
-    lowercase         : bool             = config["preprocessing"]["lowercase"]
+    lowercase         : bool             = PREPROCESSING_SETTINGS["lowercase"]
     # Remove
-    stopword_langs    : List[str] | None = config["preprocessing"]["stopwords"]["languages"]
+    stopword_langs    : List[str] | None = PREPROCESSING_SETTINGS["stopwords"]["languages"]
     rem_stop          : bool             = True if stopword_langs else False
-    rem_punc          : bool             = config["preprocessing"]["remove_punctuation"]
-    rem_num           : bool             = config["preprocessing"]["remove_numbers"]
-    rem_special       : bool             = config["preprocessing"]["remove_special_characters"]
+    rem_punc          : bool             = PREPROCESSING_SETTINGS["remove_punctuation"]
+    rem_num           : bool             = PREPROCESSING_SETTINGS["remove_numbers"]
+    rem_special       : bool             = PREPROCESSING_SETTINGS["remove_special_characters"]
     # Stemming
-    stemming_algo     : str | None       = config["preprocessing"]["stemming"]["algorithm"]
+    stemming_algo     : str | None       = PREPROCESSING_SETTINGS["stemming"]["algorithm"]
     stem              : bool             = True if stemming_algo else False
     # Lemmatization
-    lemmatization_algo: str | None       = config["preprocessing"]["lemmatization"]["algorithm"]
+    lemmatization_algo: str | None       = PREPROCESSING_SETTINGS["lemmatization"]["algorithm"]
     lemmatize         : bool             = True if lemmatization_algo else False
 
-    max_num_documents: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
+    max_num_documents: int =MAX_NUM_DOCUMENTS if MAX_NUM_DOCUMENTS is not None else -1
     print(f"{Style.FG_YELLOW}Using Settings for preprocessing: \n\tLowercase: {lowercase}, \n\tRemove Stopwords: {rem_stop} ({stopword_langs}), \n\tRemove Punctuation: {rem_punc}, \n\tRemove Numbers: {rem_num}, \n\tRemove Special Characters: {rem_special}, \n\tStemming: {stem} ({stemming_algo}), \n\tLemmatization: {lemmatize} ({lemmatization_algo}), \n\tMax documents: {max_num_documents}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
     print(f"{Style.FG_CYAN}Preprocessing news dataset...{Style.RESET}")
@@ -43,7 +43,7 @@ def preprocess_data(config: dict) -> None:
 
 # ========================= MAIN ==========================
 def main():
-    config = utils.load_config()
+    config = load_config()
     preprocess_data(config)
 
 

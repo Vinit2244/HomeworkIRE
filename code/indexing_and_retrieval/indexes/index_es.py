@@ -1,24 +1,13 @@
 # ======================== IMPORTS ========================
-import os
 import json
 import inspect
+from utils import Style
 from typing import Iterable
-from dotenv import load_dotenv
 from .index_base import BaseIndex
 from elasticsearch import Elasticsearch, helpers
-from utils import Style, StatusCode, load_config, ask_es_query
+from .query_processing import QueryProcessingEngine
+from constants import StatusCode, SEARCH_FIELDS, MAX_RESULTS, USERNAME, PASSWORD, CHUNK_SIZE
 
-
-# ======================= GLOBALS ========================
-load_dotenv()  # Loads .env file into environment variables
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-API_KEY  = os.getenv("API_KEY")
-
-config = load_config()
-CHUNK_SIZE = config["elasticsearch"].get("chunk_size", 500)
-MAX_RESULTS = config.get("max_results", 50)
-SEARCH_FIELDS = config.get("search_fields", ["text"])
 print(f"{Style.FG_YELLOW}Using \n\tChunk size: {CHUNK_SIZE}, \n\tMax results: {MAX_RESULTS}, \n\tSearch field: {SEARCH_FIELDS}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
 
@@ -147,7 +136,8 @@ class ESIndex(BaseIndex):
         if index_id is None or index_id.strip() == "":
             index_id = "*"  # Search across all indices if no specific index is provided
 
-        res = ask_es_query(self.es_client, index_id, query, SEARCH_FIELDS, MAX_RESULTS, True)
+        engine = QueryProcessingEngine()
+        res = engine.process_es_query(self.es_client, index_id, query, SEARCH_FIELDS, MAX_RESULTS, True)
 
         if isinstance(res, StatusCode):
             return res

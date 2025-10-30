@@ -3,8 +3,9 @@ import os
 import json
 import random
 import argparse
+from utils import Style
 from typing import List, Dict
-from utils import load_config, Style
+from constants import INDEX_SETTINGS
 from dataset_managers.dataset_news import get_news_dataset_handler
 from dataset_managers.dataset_wikipedia import get_wikipedia_dataset_handler
 
@@ -42,8 +43,7 @@ QUERY_TEMPLATES = [
 
 # ======================= FUNCTIONS =======================
 def get_dataset_handler():
-    config = load_config()
-    dataset_name = config.get("index", {}).get("dataset", "News")
+    dataset_name = INDEX_SETTINGS.get("dataset", "News")
 
     print(f"{Style.FG_CYAN}Loading dataset handler for: {dataset_name}{Style.RESET}")
 

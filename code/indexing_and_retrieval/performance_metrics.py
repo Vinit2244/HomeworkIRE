@@ -10,18 +10,19 @@ import matplotlib.pyplot as plt
 from utils import Style, load_config
 from indexes import ESIndex, CustomIndex
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
+from constants import TEMP_FOLDER_PATH
 
 
 # ======================= GLOBALS =========================
 memory_usage = []
 monitoring = True
-INTERVAL = 0.01  # seconds
+
+INTERVAL = 0.01 # seconds
 PLOT_ES = False # Whether to plot ES index in latency comparison
-TEMP_FOLDER = "./temp" # Temporary folder to store intermediate outputs
 
 
 # ======================= THREADS =========================
-def monitor_memory(interval:int=1):
+def monitor_memory(interval: int=1):
     """
     Continuously record memory usage every `interval` seconds.
     """
@@ -36,11 +37,11 @@ def clear_folder(folder_path: str) -> None:
         os.remove(os.path.join(folder_path, file))
 
 def reset() -> None:
-    clear_folder(TEMP_FOLDER)
+    clear_folder(TEMP_FOLDER_PATH)
     print("\n"+"="*50+"\n")
 
 def get_temp_file_path(metric: str, args: dict) -> str:
-    return f"{TEMP_FOLDER}/{metric}_{args.get("index_type")}_{args.get("dataset")}_{args.get("info")}_{args.get("dstore")}_{args.get("qproc")}_{args.get("compr")}_{args.get("optim")}.json"
+    return f"{TEMP_FOLDER_PATH}/{metric}_{args.get("index_type")}_{args.get("dataset")}_{args.get("info")}_{args.get("dstore")}_{args.get("qproc")}_{args.get("compr")}_{args.get("optim")}.json"
 
 
 # ====================== FUNCTIONS ========================

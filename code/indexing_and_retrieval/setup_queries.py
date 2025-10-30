@@ -1,16 +1,15 @@
 # ======================== IMPORTS ========================
-import os
 import json
 import argparse
-from dotenv import load_dotenv
+from utils import Style
+from constants import StatusCode
+from indexes import QueryProcessingEngine
 from elasticsearch import Elasticsearch, ConnectionError
-from utils import load_config, Style, ask_es_query, StatusCode
+from constants import ES_HOST, ES_PORT, ES_SCHEME, MAX_RESULTS, SEARCH_FIELDS, MAX_NUM_DOCUMENTS, PREPROCESSING_SETTINGS, ATTRIBUTES_INDEXED, USERNAME, PASSWORD
 
 
 # ======================== GLOBALS ========================
-load_dotenv()
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
+
 
 
 # ======================= FUNCTIONS =======================
@@ -24,17 +23,6 @@ def query_and_update(file_path: str) -> None:
     Returns:
         None
     """
-
-    config = load_config()
-    ES_HOST      : str = config['elasticsearch']['host']
-    ES_PORT      : int = config['elasticsearch']['port']
-    ES_SCHEME    : str = config['elasticsearch']['scheme']
-    MAX_RESULTS  : int = config.get("max_results", 50)
-    SEARCH_FIELDS: str = config.get("search_fields", ["text"])
-
-    MAX_NUM_DOCUMENTS     : int = config.get("max_num_documents", -1)
-    PREPROCESSING_SETTINGS: dict = config.get("preprocessing", {})
-    ATTRIBUTES_INDEXED    : list = config["index"].get("attributes", [])
 
     print(f"{Style.FG_YELLOW}Using \n\tElasticsearch Host: {ES_HOST}, \n\tPort: {ES_PORT}, \n\tScheme: {ES_SCHEME}, \n\tMax Results: {MAX_RESULTS}, \n\tSearch FieldsW: {SEARCH_FIELDS}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
@@ -89,7 +77,7 @@ def query_and_update(file_path: str) -> None:
         query_text = item["query"]
         print(f"  ({i+1}/{len(data['queries'])}) Searching for: '{query_text[:70]}...'")
 
-        res = ask_es_query(es_client, index_id, query_text, SEARCH_FIELDS, MAX_RESULTS, False)
+        res = QueryProcessingEngine.process_es_query(es_client, index_id, query_text, SEARCH_FIELDS, MAX_RESULTS, False)
 
         if isinstance(res, StatusCode):
             print(f"{Style.FG_RED}Failed to execute query '{query_text}'.{Style.RESET}")

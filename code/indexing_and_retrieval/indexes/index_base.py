@@ -1,41 +1,7 @@
 # ======================== IMPORTS ========================
-from enum import Enum
 from typing import Iterable
 from abc import ABC, abstractmethod
-
-
-# ========================= ENUMS =========================
-class IndexInfo(Enum):
-    NONE     : int = 0 # Just a placeholder
-    BOOLEAN  : int = 1
-    WORDCOUNT: int = 2
-    TFIDF    : int = 3
-
-
-class DataStore(Enum):
-    NONE   : int = 0 # Just a placeholder
-    CUSTOM : int = 1
-    ROCKSDB: int = 2
-    REDIS  : int = 3
-
-
-class Compression(Enum):
-    NONE: int = 0
-    CODE: int = 1
-    CLIB: int = 2
-
-
-class Optimizations(Enum):
-    NONE         : str = '0'
-    SKIPPING     : str = 'sp'
-    THRESHOLDING : str = 'th'
-    EARLYSTOPPING: str = 'es'
-
-
-class QueryProc(Enum):
-    NONE: str = '0' # Just a placeholder
-    TERM: str = 'T'
-    DOC : str = 'D'
+from constants import IndexInfo, DataStore, Compression, QueryProc, Optimizations
 
 
 # ====================== BASE CLASS =======================

@@ -1,12 +1,10 @@
 # ======================== IMPORTS ========================
 import os
 import yaml
-from enum import Enum
 from typing import List
 from collections import defaultdict
-from query_parser import QueryParser
 
-CONFIG_FILE_PATH: str = "../../config.yaml"
+CONFIG_FILE_PATH: str = "../../config.yaml" # Relative to this file
 
 
 # ======================== CLASSES ========================
@@ -34,30 +32,6 @@ class Style:
     BG_CYAN   : str = "\033[46m"
     BG_WHITE  : str = "\033[47m"
     BG_ORANGE : str = "\033[48;5;208m"
-
-
-class StatusCode(Enum):
-    SUCCESS              : int = 0
-    CONNECTION_FAILED    : int = 1000
-    ERROR_ACCESSING_INDEX: int = 1001
-    INVALID_INPUT        : int = 1002
-    INDEXING_FAILED      : int = 1003
-    FAILED_TO_REMOVE_FILE: int = 1004
-    QUERY_FAILED         : int = 1005
-    INDEX_NOT_FOUND      : int = 1006
-    INDEX_ALREADY_EXISTS : int = 1007
-    
-    UNKNOWN_ERROR        : int = 9999
-
-
-class IndexType(Enum):
-    ESIndex    : int = 1
-    CustomIndex: int = 2
-
-
-class DatasetType(Enum):
-    News     : int = 1
-    Wikipedia: int = 2
 
 
 # =================== UTILITY FUNCTIONS ===================
@@ -95,81 +69,3 @@ def wait_for_enter():
     Waits for the user to press Enter.
     '''
     input(f"\n{Style.FG_BLUE}Press Enter to continue...{Style.RESET}")
-
-
-def ask_es_query(es_client, index_id: str, query: str, search_fields: list, max_results: int, source: bool=True):
-    '''
-    Executes the given query on the specified Elasticsearch index and returns the response.
-    '''
-    if not search_fields:
-        print(f"{Style.FG_RED}Error: No search_fields provided.{Style.RESET}")
-        return StatusCode.QUERY_FAILED
-
-    # ================== DSL TRANSLATOR ==================
-    def build_es_query(node):
-        if not node:
-             raise ValueError("Query parser returned an empty node.")
-
-        if "TERM" in node:
-            # Use "match" for a single term (better relevance than match_phrase)
-            return {"multi_match": {
-                "query": node["TERM"],
-                "fields": search_fields
-            }}
-
-        if "AND" in node:
-            left, right = node["AND"]
-            return {
-                "bool": {
-                    "must": [build_es_query(left), build_es_query(right)]
-                }
-            }
-
-        if "OR" in node:
-            left, right = node["OR"]
-            return {
-                "bool": {
-                    "should": [build_es_query(left), build_es_query(right)],
-                    "minimum_should_match": 1
-                }
-            }
-
-        if "NOT" in node:
-            return {"bool": {"must_not": [build_es_query(node["NOT"])]}}
-
-        if "PHRASE" in node:
-            inner = node["PHRASE"]
-            if "TERM" in inner:
-                return {
-                    "multi_match": {
-                        "query": inner["TERM"],
-                        "fields": search_fields,
-                        "type": "phrase"
-                    }
-                }
-            return build_es_query(inner)
-
-        raise ValueError(f"Unknown node type: {node}")
-
-    try:
-        parser = QueryParser(query)
-        parsed_tree = parser.parse()
-        
-        if parsed_tree is None:
-            raise ValueError(f"QueryParser failed to parse query: '{query}'")
-
-        es_query = build_es_query(parsed_tree)
-
-        res = es_client.search(
-            index=index_id, 
-            query=es_query, 
-            size=max_results,
-            _source=source
-        )
-
-        return res
-
-    except Exception as e:
-        print(f"{Style.FG_RED}Error during query parsing or execution: {e}{Style.RESET}")
-        print(f"Failed query: {query}")
-        return StatusCode.QUERY_FAILED

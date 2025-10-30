@@ -6,25 +6,16 @@ import math
 import zlib
 import redis
 import shutil
-from utils import Style
 from pathlib import Path
 from typing import Iterable
 from .encoder import Encoder
 from rocksdict import Rdict
-from query_parser import QueryParser
-from utils import StatusCode, load_config
-from .index_base import BaseIndex, IndexInfo, DataStore, Compression, QueryProc, Optimizations
+from .index_base import BaseIndex
+from .query_processing import QueryProcessingEngine
+from constants import IndexInfo, DataStore, Compression, QueryProc, Optimizations, StatusCode, SEARCH_FIELDS, STORAGE_DIR, REDIS_HOST, REDIS_PORT, REDIS_DB
 
 
 # ======================= GLOBALS ========================
-config = load_config()
-STORAGE_DIR: str = config.get("storage_folder_path", "./storage")
-os.makedirs(STORAGE_DIR, exist_ok=True)
-
-REDIS_HOST: str = config.get("redis", {}).get("host", "localhost")
-REDIS_PORT: int = config.get("redis", {}).get("port", 6379)
-REDIS_DB: int = config.get("redis", {}).get("db", 0)
-
 def load_metadata() -> dict:
     file_path = Path(os.path.join(STORAGE_DIR, "metadata.yaml"))
 
@@ -42,8 +33,6 @@ def load_metadata() -> dict:
             return yaml.safe_load(f)
 
 METADATA: dict = load_metadata()
-SEARCH_FIELDS: list = config.get("search_fields", ["text"])
-MAX_RESULTS: int = config.get("max_results", 50)
 
 
 # ======================== CLASSES ========================
@@ -215,95 +204,6 @@ class CustomIndex(BaseIndex):
         METADATA["indices"] = all_indices
         with open(os.path.join(STORAGE_DIR, "metadata.yaml"), "w") as f:
             yaml.dump(METADATA, f, default_flow_style=False)
-
-    def _check_phrase_in_doc(self, doc_id: str, words: list, index: dict) -> bool:
-        def get_positions(word: str, doc_id: str) -> list:
-            postings = index.get(word, {}).get(doc_id, {})
-            if not postings:
-                return []
-            
-            pos_data = postings.get("positions", [])
-
-            if self.compr == Compression.CODE.name:
-                if not pos_data:
-                    return []
-                varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
-                gaps = self.encoder.varbyte_decode(varbyte_blob)
-                return self.encoder.gap_decode(gaps)
-            else:
-                return pos_data
-        
-        # Get all positions for the first word in this doc
-        first_word_positions = get_positions(words[0], doc_id)
-        if not first_word_positions:
-            return False
-
-        for pos in first_word_positions:
-            # Check if "word2" exists at pos + 1, "word3" at pos + 2, etc.
-            match_found = True
-            for i, next_word in enumerate(words[1:], start=1):
-                next_word_positions = index.get(next_word, {}).get(doc_id, {}).get("positions", [])
-                if (pos + i) not in next_word_positions:
-                    match_found = False # This sequence failed
-                    break
-            
-            if match_found:
-                # Found a full phrase match starting at this position
-                return True 
-        
-        return False # No starting position led to a full match
-    
-    def _execute_custom_query(self, node: dict, index: dict, all_docs: set) -> set:
-        if "TERM" in node:
-            term = node["TERM"].lower() # Lowercase to match index
-            term_data = index.get(term)
-            if term_data:
-                return set(term_data.keys()) # Returns {uuid1, uuid2, ...}
-            else:
-                return set() # Empty set
-
-        if "AND" in node:
-            left_docs = self._execute_custom_query(node["AND"][0], index, all_docs)
-            right_docs = self._execute_custom_query(node["AND"][1], index, all_docs)
-            return left_docs.intersection(right_docs) # AND = intersection
-
-        if "OR" in node:
-            left_docs = self._execute_custom_query(node["OR"][0], index, all_docs)
-            right_docs = self._execute_custom_query(node["OR"][1], index, all_docs)
-            return left_docs.union(right_docs) # OR = union
-
-        if "NOT" in node:
-            operand_docs = self._execute_custom_query(node["NOT"], index, all_docs)
-            return all_docs.difference(operand_docs) # NOT = set difference
-
-        if "PHRASE" in node:
-            inner = node["PHRASE"]
-            phrase_term = inner.get("TERM")
-            
-            if not phrase_term:
-                raise ValueError("PHRASE operator must be followed by a single term (e.g., PHRASE \"hello world\")")
-            
-            words = phrase_term.lower().split() # Lowercase to match index
-            if not words:
-                return set()
-            
-            # Get postings for the first word
-            first_word = words[0]
-            postings = index.get(first_word)
-            if not postings:
-                return set() # First word not in index
-
-            candidate_docs = set(postings.keys())
-            final_docs = set()
-
-            # For each doc, check if the other words follow in sequence
-            for doc_id in candidate_docs:
-                if self._check_phrase_in_doc(doc_id, words, index):
-                    final_docs.add(doc_id)
-            
-            return final_docs
-
-        raise ValueError(f"Unknown query node: {node}")
 
     def _compress(self, inverted_index: dict) -> bytes:
         # CODE Compression
@@ -506,72 +406,16 @@ class CustomIndex(BaseIndex):
 
         if not self.loaded_index:
             return StatusCode.ERROR_ACCESSING_INDEX
-
-        # Parse the query
-        try:
-            parser = QueryParser(query)
-            parsed_tree = parser.parse()
-            if parsed_tree is None:
-                raise ValueError("Query parser returned None")
-        except Exception as e:
-            return StatusCode.QUERY_FAILED
+        
+        engine = QueryProcessingEngine()
+        query = engine.preprocess_query(query)
 
         # Get all document IDs (for NOT operations)
         all_doc_ids = self.list_indexed_files(index_id)
         if isinstance(all_doc_ids, StatusCode):
             return all_doc_ids
-        all_doc_ids_set = set(all_doc_ids)
-        if not all_doc_ids_set:
-             print(f"{Style.FG_ORANGE}Warning: Index contains no documents.{Style.RESET}")
-             all_doc_ids_set = set()
 
-        # Execute the query
-        try:
-            matching_doc_ids = self._execute_custom_query(
-                parsed_tree, 
-                self.loaded_index, 
-                all_doc_ids_set
-            )
-        except Exception as e:
-            return StatusCode.QUERY_FAILED
-        
-        # Fetch documents and format results
-        index_data_path: str = os.path.join(STORAGE_DIR, index_id)
-        hits = []
-
-        for i, doc_id in enumerate(matching_doc_ids):
-            # Stop fetching once we reach the limit
-            if i >= MAX_RESULTS:
-                break
-                
-            doc_source = None
-            try:
-                if self.dstore == DataStore.CUSTOM.name:
-                    doc_path = os.path.join(index_data_path, "documents", f"{doc_id}.json")
-                    with open(doc_path, "r") as f:
-                        doc_source = json.load(f)
-
-                elif self.dstore == DataStore.ROCKSDB.name:
-                    if self.doc_store_handle:
-                        doc_bytes = self.doc_store_handle.get(doc_id.encode('utf-8'))
-                        if doc_bytes:
-                            doc_source = json.loads(doc_bytes.decode('utf-8'))
-                
-                elif self.dstore == DataStore.REDIS.name:
-                    if self.redis_client:
-                        doc_json = self.redis_client.hget(f"{index_id}:documents", doc_id)
-                        if doc_json:
-                            doc_source = json.loads(doc_json)
-                
-                if doc_source:
-                    hits.append({
-                        "_id": doc_id,
-                        "_source": doc_source
-                        # You could add relevance scores here if using TF-IDF
-                    })
-
-            except Exception as e:
-                print(f"{Style.FG_ORANGE}Warning: Could not retrieve document {doc_id}. Error: {e}{Style.RESET}")
+        matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore)
 
         # Format output to mimic Elasticsearch
         es_like_output = {
