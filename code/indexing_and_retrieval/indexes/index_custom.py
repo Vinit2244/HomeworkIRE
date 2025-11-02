@@ -252,9 +252,16 @@ class CustomIndex(BaseIndex):
             
             elif self.dstore == DataStore.ROCKSDB.name:
                 index_db_path = os.path.join(index_data_path, "index_db")
-                with Rdict(index_db_path) as db:
-                    meta_bytes = db[b'metadata'] # Use [] for direct access, fails if not found
+
+                # Check if the handle is already open from load_index()
+                if self.index_db_handle:
+                    meta_bytes = self.index_db_handle[b'metadata']
                     index_info = json.loads(meta_bytes.decode('utf-8'))
+                else:
+                    # If index is not loaded, open it temporarily
+                    with Rdict(index_db_path) as db:
+                        meta_bytes = db[b'metadata']
+                        index_info = json.loads(meta_bytes.decode('utf-8'))
             
             elif self.dstore == DataStore.REDIS.name:
                 if not self.redis_client:
@@ -336,15 +343,23 @@ class CustomIndex(BaseIndex):
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def load_index(self, index_id: str) -> StatusCode:
-        index_id = self._add_ext_to_index_id(index_id)
-        if not self._check_index_exists(index_id):
+        index_id_full = self._add_ext_to_index_id(index_id)
+        if not self._check_index_exists(index_id_full):
             return StatusCode.INDEX_NOT_FOUND
         
-        index_data_path: str = os.path.join(STORAGE_DIR, index_id)
+        index_data_path: str = os.path.join(STORAGE_DIR, index_id_full)
 
         try:
             index_info = {}
             index_bytes: bytes = None
+
+            # If other RocksDB handles are already open, close them first to prevent a lock conflict on loading.
+            if self.index_db_handle:
+                self.index_db_handle.close()
+                self.index_db_handle = None
+            if self.doc_store_handle:
+                self.doc_store_handle.close()
+                self.doc_store_handle = None
 
             if self.dstore == DataStore.CUSTOM.name:
                 inverted_index_path: str = os.path.join(index_data_path, "inverted_index.bin")
@@ -371,11 +386,11 @@ class CustomIndex(BaseIndex):
                 if not self.redis_client:
                     return StatusCode.ERROR_ACCESSING_INDEX
                 
-                meta_json = self.redis_client.get(f"{index_id}:metadata")
+                meta_json = self.redis_client.get(f"{index_id_full}:metadata")
                 index_info = json.loads(meta_json)
 
                 byte_redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-                index_bytes = byte_redis.get(f"{index_id}:inverted_index")
+                index_bytes = byte_redis.get(f"{index_id_full}:inverted_index")
 
             if not index_bytes:
                 return StatusCode.ERROR_ACCESSING_INDEX
@@ -392,6 +407,14 @@ class CustomIndex(BaseIndex):
             return StatusCode.SUCCESS
         
         except Exception as e:
+            # Clean up handles if loading failed, otherwise they stay locked
+            if self.index_db_handle:
+                self.index_db_handle.close()
+                self.index_db_handle = None
+            if self.doc_store_handle:
+                self.doc_store_handle.close()
+                self.doc_store_handle = None
+                
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def update_index(self, index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, dict]]) -> StatusCode:
@@ -407,16 +430,18 @@ class CustomIndex(BaseIndex):
         if not self.loaded_index:
             return StatusCode.ERROR_ACCESSING_INDEX
         
-        engine = QueryProcessingEngine()
-        query = engine.preprocess_query(query)
+        engine = QueryProcessingEngine(self.compr, self.qproc)
 
         # Get all document IDs (for NOT operations)
         all_doc_ids = self.list_indexed_files(index_id)
         if isinstance(all_doc_ids, StatusCode):
             return all_doc_ids
 
-        matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore)
+        matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore, self.doc_store_handle, self.redis_client, self.info)
 
+        if isinstance(matching_doc_ids, StatusCode):
+            return matching_doc_ids # Query failed
+        
         # Format output to mimic Elasticsearch
         es_like_output = {
             "hits": {

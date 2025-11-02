@@ -17,7 +17,7 @@ settings: List[str] = []
 
 
 # =================== HELPER FUNCTIONS ====================
-def handle_create_index(idx: BaseIndex, _type: IndexType) -> None:
+def handle_create_index(idx: BaseIndex) -> None:
     settings.append("Operation: Create Index")
     print_settings()
 
@@ -115,7 +115,13 @@ def menu() -> None:
         for index_type in IndexType:
             print(f"{Style.FG_CYAN}  {index_type.value}. {index_type.name}{Style.RESET}")
         print()
-        _type: int = int(input(f"{Style.FG_YELLOW}Enter choice: {Style.RESET}").strip())
+        
+        try:
+            _type: int = int(input(f"{Style.FG_YELLOW}Enter choice: {Style.RESET}").strip())
+        except ValueError:
+            print(f"{Style.FG_RED}Invalid input. Please enter a number corresponding to the index type.{Style.RESET}")
+            wait_for_enter()
+            continue
 
         # Convert to IndexType enum and validate
         for index_type in IndexType:
@@ -166,7 +172,7 @@ def menu() -> None:
             match opt:
                 # Create Index
                 case 1:
-                    handle_create_index(idx, _type)
+                    handle_create_index(idx)
                     wait_for_enter()
                     continue
                 
