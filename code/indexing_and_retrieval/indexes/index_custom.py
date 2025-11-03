@@ -6,6 +6,7 @@ import math
 import zlib
 import redis
 import shutil
+from utils import Style
 from pathlib import Path
 from typing import Iterable
 from .encoder import Encoder
@@ -83,6 +84,46 @@ class CustomIndex(BaseIndex):
     def _check_index_exists(self, index_id: str) -> bool:
         all_indices: list = METADATA.get("indices", [])
         return index_id in all_indices
+
+    def _get_document(self, index_id_full: str, doc_id: str) -> dict | None:
+        index_data_path: str = os.path.join(STORAGE_DIR, index_id_full)
+        doc_source = None
+        try:
+            if self.dstore == DataStore.CUSTOM.name:
+                doc_path = os.path.join(index_data_path, "documents", f"{doc_id}.json")
+                with open(doc_path, "r") as f:
+                    doc_source = json.load(f)
+            
+            elif self.dstore == DataStore.ROCKSDB.name:
+                doc_store_path = os.path.join(index_data_path, "doc_store")
+                # Use open handle if available (from load_index), else open temp one
+                if self.doc_store_handle:
+                    doc_bytes = self.doc_store_handle.get(doc_id.encode('utf-8'))
+                    if doc_bytes:
+                        doc_source = json.loads(doc_bytes.decode('utf-8'))
+                else:
+                    with Rdict(doc_store_path) as db:
+                        doc_bytes = db.get(doc_id.encode('utf-8'))
+                        if doc_bytes:
+                            doc_source = json.loads(doc_bytes.decode('utf-8'))
+            
+            elif self.dstore == DataStore.REDIS.name:
+                # Use open client if available
+                client = self.redis_client
+                if not client:
+                    # Create a temp client
+                    client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+                    client.ping()
+                
+                doc_json = client.hget(f"{index_id_full}:documents", doc_id)
+                if doc_json:
+                    doc_source = json.loads(doc_json)
+            
+            return doc_source
+
+        except Exception as e:
+            print(f"{Style.FG_ORANGE}Warning: Could not retrieve document {doc_id} for re-index. Error: {e}{Style.RESET}")
+            return None
 
     def _build_inverted_index(self, files: Iterable[tuple[str, dict]], index_data_path: str, index_id: str) -> dict:
         # Create place for storing documents if using custom data store
@@ -418,9 +459,86 @@ class CustomIndex(BaseIndex):
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def update_index(self, index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, dict]]) -> StatusCode:
-        index_id = self._add_ext_to_index_id(index_id)
-        # TODO: Implement index update functionality
-        ...
+        # Find the full index ID
+        index_id_full = self._add_ext_to_index_id(index_id)
+        if index_id_full == StatusCode.INDEX_NOT_FOUND:
+            print(f"{Style.FG_RED}Error: Cannot update index '{index_id}' as it does not exist.{Style.RESET}")
+            return StatusCode.INDEX_NOT_FOUND
+        
+        # Get the settings of the current index before we delete it
+        # We need this to create the new index with the same properties.
+        info_result = self.get_index_info(index_id)
+        if isinstance(info_result, StatusCode):
+            print(f"{Style.FG_RED}Error: Could not get info for index '{index_id}'. Aborting update.{Style.RESET}")
+            return info_result
+        index_props = info_result[index_id] 
+        
+        print(f"{Style.FG_YELLOW}Starting re-index for '{index_id_full}'...{Style.RESET}")
+
+        # Get all current document IDs
+        current_doc_ids = self.list_indexed_files(index_id)
+        if isinstance(current_doc_ids, StatusCode):
+            return current_doc_ids
+        
+        # Create the new collection of files for re-indexing
+        new_file_collection = []
+        remove_set = set(remove_files)
+
+        add_dict = {uuid: payload for uuid, payload in add_files}
+
+        print(f"{Style.FG_CYAN}Collecting documents for re-index...{Style.RESET}")
+        
+        # Add existing files (unless they are in remove_set or add_dict)
+        for doc_id in current_doc_ids:
+            if doc_id in remove_set:
+                continue # Skip, it's marked for deletion
+            if doc_id in add_dict:
+                continue # Skip, it will be replaced by the (new) version in add_files
+            
+            # This is a document we need to keep. Fetch its payload.
+            payload = self._get_document(index_id_full, doc_id)
+            if payload:
+                new_file_collection.append((doc_id, payload))
+            else:
+                print(f"{Style.FG_ORANGE}Warning: Could not find payload for doc_id {doc_id}. It will be dropped from the new index.{Style.RESET}")
+        
+        # Add all new/updated files
+        new_file_collection.extend(add_files)
+        
+        doc_count = len(new_file_collection)
+        if doc_count == 0:
+            print(f"{Style.FG_ORANGE}Warning: Update results in an empty index. Deleting index '{index_id}'.{Style.RESET}")
+            return self.delete_index(index_id)
+
+        print(f"{Style.FG_CYAN}New index will have {doc_count} documents.{Style.RESET}")
+
+        # Delete the old index. This closes all handles and releases all locks.
+        print(f"{Style.FG_CYAN}Deleting old index: {index_id_full}...{Style.RESET}")
+        delete_status = self.delete_index(index_id)
+        if delete_status != StatusCode.SUCCESS:
+            print(f"{Style.FG_RED}Failed to delete old index. Aborting update.{Style.RESET}")
+            return delete_status
+        
+        # Create the new index with the same settings
+        print(f"{Style.FG_CYAN}Creating new index: {index_id}...{Style.RESET}")
+        
+        re_indexer = CustomIndex(
+            core=self.core,
+            info=index_props.get("info", "BOOLEAN"),
+            dstore=index_props.get("data_store", "CUSTOM"),
+            qproc=index_props.get("query_processor", "NONE"),
+            compr=index_props.get("compression", "NONE"),
+            optim=index_props.get("optimization", "NONE")
+        )
+        
+        create_status = re_indexer.create_index(index_id, new_file_collection)
+        
+        if create_status == StatusCode.SUCCESS:
+            print(f"{Style.FG_GREEN}Index '{index_id}' updated successfully.{Style.RESET}")
+        else:
+            print(f"{Style.FG_RED}Failed to create new index during update.{Style.RESET}")
+
+        return create_status
 
     def query(self, query: str, index_id: str=None) -> str | StatusCode:
         index_id = self._add_ext_to_index_id(index_id)

@@ -120,7 +120,7 @@ class QueryParser:
 
 # ================== QUERY PROCESSING ENGINE ==================
 class QueryProcessingEngine:
-    def __init__(self, compr: str, qproc: str) -> None:
+    def __init__(self, compr: str="NONE", qproc: str="NONE") -> None:
         self.compr: str = compr
         self.qproc: str = qproc
         self.encoder = Encoder()
