@@ -2,14 +2,15 @@
 import json
 import argparse
 from utils import Style
+from typing import List
 from constants import StatusCode
 from indexes import QueryProcessingEngine
 from elasticsearch import Elasticsearch, ConnectionError
-from constants import ES_HOST, ES_PORT, ES_SCHEME, MAX_RESULTS, SEARCH_FIELDS, MAX_NUM_DOCUMENTS, PREPROCESSING_SETTINGS, ATTRIBUTES_INDEXED, USERNAME, PASSWORD
+from constants import ES_HOST, ES_PORT, ES_SCHEME, MAX_RESULTS, SEARCH_FIELDS, MAX_NUM_DOCUMENTS, PREPROCESSING_SETTINGS, USERNAME, PASSWORD
 
 
 # ======================= FUNCTIONS =======================
-def query_and_update(file_path: str) -> None:
+def query_and_update(file_path: str, attributes: List[str]) -> None:
     """
     About:
     ------
@@ -29,10 +30,7 @@ def query_and_update(file_path: str) -> None:
     # Connect to Elasticsearch
     print(f"Connecting to Elasticsearch at {ES_SCHEME}://{ES_HOST}:{ES_PORT}...")
     try:
-        es_client = Elasticsearch(
-            [{'host': ES_HOST, 'port': ES_PORT, 'scheme': ES_SCHEME}],
-            basic_auth=(USERNAME, PASSWORD)
-        )
+        es_client = Elasticsearch([{'host': ES_HOST, 'port': ES_PORT, 'scheme': ES_SCHEME}], basic_auth=(USERNAME, PASSWORD))
         if not es_client.ping():
             raise ConnectionError("Could not connect to Elasticsearch.")
         else:
@@ -57,11 +55,11 @@ def query_and_update(file_path: str) -> None:
     # Store the preprocessing settings used while indexing the documents
     data["preprocessing_settings"] = PREPROCESSING_SETTINGS
 
+    # Store the attributes that were indexed
+    data["attributes_indexed"] = attributes
+
     # Store the search field used
     data["search_fields"] = SEARCH_FIELDS
-
-    # Store the attributes that were indexed
-    data["attributes_indexed"] = ATTRIBUTES_INDEXED
 
     # Store the max results setting used
     data["max_results"] = MAX_RESULTS
@@ -77,7 +75,8 @@ def query_and_update(file_path: str) -> None:
         query_text = item["query"]
         print(f"  ({i+1}/{len(data['queries'])}) Searching for: '{query_text[:70]}...'")
 
-        res = QueryProcessingEngine.process_es_query(es_client, index_id, query_text, SEARCH_FIELDS, False)
+        engine = QueryProcessingEngine()
+        res = engine.process_es_query(es_client, index_id, query_text, SEARCH_FIELDS, False)
 
         if isinstance(res, StatusCode):
             print(f"{Style.FG_RED}Failed to execute query '{query_text}'.{Style.RESET}")
@@ -101,7 +100,9 @@ def query_and_update(file_path: str) -> None:
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Query Elasticsearch and update JSON file with results.")
     argparser.add_argument('--path', type=str, required=True, help="Path to the JSON file containing queries.")
+    argparser.add_argument('--attributes', type=str, nargs='*', default=[], help="Attributes indexed")
     args = argparser.parse_args()
     file_path = args.path
+    attributes = args.attributes
 
-    query_and_update(file_path)
+    query_and_update(file_path, attributes)

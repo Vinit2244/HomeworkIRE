@@ -9,7 +9,6 @@ from typing import List, Dict, Any, Set
 from constants import (
     STORAGE_DIR, 
     MAX_RESULTS, 
-    RANKING_SCORE_THRESHOLD,
     DataStore, 
     StatusCode, 
     # Compression,
@@ -17,6 +16,10 @@ from constants import (
     QueryProc,
     Optimizations
 )
+
+
+# ==================== GLOBALS =====================
+ES_RESULTS_SIZE = 10000  # Max results to fetch from ES for processing
 
 
 # ================== QUERY PARSER ==================
@@ -169,8 +172,7 @@ class QueryParser:
 
 # ================== QUERY PROCESSING ENGINE ==================
 class QueryProcessingEngine:
-    def __init__(self, compr: str="NONE", qproc: str="NONE") -> None:
-        self.compr: str = compr
+    def __init__(self, qproc: str="NONE") -> None:
         self.qproc: str = qproc
         self.encoder = Encoder()
 
@@ -200,16 +202,7 @@ class QueryProcessingEngine:
             if not postings:
                 return []
             
-            # pos_data = postings.get("positions", [])
             return postings.get("positions", [])
-            # if self.compr == Compression.CODE.name:
-            #     if not pos_data:
-            #         return []
-            #     varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
-            #     gaps = self.encoder.varbyte_decode(varbyte_blob)
-            #     return self.encoder.gap_decode(gaps)
-            # else:
-            #     return pos_data
         
         # Get all positions for the first word in this doc
         first_word_positions = get_positions(words[0], doc_id)
@@ -373,6 +366,7 @@ class QueryProcessingEngine:
         About:
         ------
             Ranks documents using Document-at-a-Time (DAAT) approach with optional optimizations.
+            Optimizations include Early Stopping and Thresholding when 'optim' is set to OPTIMISED.
 
         Args:
         -----
@@ -380,7 +374,7 @@ class QueryProcessingEngine:
             scoring_terms (List[str]): List of terms to use for scoring.
             index (Dict[str, Any]): The in-memory index structure.
             index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
-            optim (str): The optimization strategy used (e.g., EARLYSTOPPING, THRESHOLDING, NONE).
+            optim (str): The optimization strategy used (e.g., OPTIMISED, NONE).
 
         Returns:
         --------
@@ -391,101 +385,80 @@ class QueryProcessingEngine:
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
 
-        # Cache postings for all valid scoring terms
+        # Cache valid terms and their postings
         valid_terms = [t.lower() for t in scoring_terms if t.lower() in index]
         if not valid_terms:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
 
-        # Prepare posting lists sorted by doc_id (as required by WAND/DAAT)
         inverted_index = {}
         max_term_scores = {}
         for term in valid_terms:
             postings_dict = index[term]
-            # Convert dict -> list of {doc_id, score}
-            postings_list = [{"doc_id": d_id, "score": d_data.get(score_key, 0.0)}
-                             for d_id, d_data in postings_dict.items()]
+            postings_list = [
+                {"doc_id": d_id, "score": d_data.get(score_key, 0.0)}
+                for d_id, d_data in postings_dict.items()
+            ]
             postings_list.sort(key=lambda x: x["doc_id"])  # ensure sorted order
             inverted_index[term] = postings_list
             max_term_scores[term] = max((p["score"] for p in postings_list), default=0.0)
 
-        use_early_stop = optim == Optimizations.EARLYSTOPPING.name
-        use_threshold = optim == Optimizations.THRESHOLDING.name
-
-        if not use_early_stop:
-            # Fallback to standard DAAT
-            scores_dict = {}
-            for doc_id in doc_ids_to_rank:
-                total_score = 0.0
-                for term in valid_terms:
-                    postings = index.get(term, {})
-                    doc_data = postings.get(doc_id)
-                    if doc_data:
-                        total_score += doc_data.get(score_key, 0.0)
-                if use_threshold and total_score < RANKING_SCORE_THRESHOLD:
-                    continue
-                scores_dict[doc_id] = total_score
-
-            ranked_list = sorted(scores_dict.items(), key=lambda item: item[1], reverse=True)
-            return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
-
-        pointers = {term: 0 for term in valid_terms}
-        top_k_heap = []
-        threshold = 0.0
+        # Optimization flags
+        use_optimizations = optim == Optimizations.OPTIMISED.name
         top_k = MAX_RESULTS
+        top_k_heap = []  # min-heap
+        threshold = 0.0
 
-        documents_processed = 0
-        documents_skipped = 0
+        # Pointers for each posting list
+        pointers = {term: 0 for term in valid_terms}
 
-        # Process candidate documents in increasing doc_id order
         for doc_id in sorted(doc_ids_to_rank):
             actual_score = 0.0
             terms_found = set()
 
-            # Compute actual score for terms that appear in this doc
+            # Step 1: Compute partial score for current doc
             for term in valid_terms:
                 postings = inverted_index[term]
                 ptr = pointers[term]
 
-                # Advance pointer to current doc_id or beyond
+                # Advance pointer to doc_id or beyond
                 while ptr < len(postings) and postings[ptr]["doc_id"] < doc_id:
                     ptr += 1
                 pointers[term] = ptr
 
-                # If the term matches current doc
                 if ptr < len(postings) and postings[ptr]["doc_id"] == doc_id:
                     actual_score += postings[ptr]["score"]
                     terms_found.add(term)
 
-            # Estimate upper bound = actual_score + max_possible_remaining
-            upper_bound = actual_score
-            for term in valid_terms:
-                if term not in terms_found:
-                    upper_bound += max_term_scores.get(term, 0.0)
+            if use_optimizations:
+                # Step 2: Estimate the maximum possible score this document could still reach
+                remaining_possible = sum(
+                    max_term_scores[t] for t in valid_terms if t not in terms_found
+                )
+                upper_bound = actual_score + remaining_possible
 
-            # Early termination check
-            if len(top_k_heap) >= top_k and upper_bound <= threshold:
-                documents_skipped += 1
-                continue
+                # --- Thresholding: skip if even max possible < current threshold
+                if len(top_k_heap) >= top_k and upper_bound <= threshold:
+                    continue
 
-            # Use actual score as final (since all terms processed)
-            final_score = actual_score
-            documents_processed += 1
-
-            # Maintain top-k heap
+            # Step 3: Add to heap and maintain threshold
             if len(top_k_heap) < top_k:
-                heapq.heappush(top_k_heap, (final_score, doc_id))
+                heapq.heappush(top_k_heap, (actual_score, doc_id))
                 threshold = top_k_heap[0][0]
-            elif final_score > threshold:
-                heapq.heapreplace(top_k_heap, (final_score, doc_id))
-                threshold = top_k_heap[0][0]
+            else:
+                if actual_score > threshold:
+                    heapq.heapreplace(top_k_heap, (actual_score, doc_id))
+                    threshold = top_k_heap[0][0]
 
-        print(f"{Style.FG_BLUE}DAAT EarlyStop processed {documents_processed} docs, "
-              f"skipped {documents_skipped} docs via early termination.{Style.RESET}")
+            # --- Early stopping ---
+            if use_optimizations:
+                # If remaining documents can’t possibly exceed current threshold
+                global_upper_bound = sum(max_term_scores.values())
+                if global_upper_bound <= threshold:
+                    break
 
-        # Convert heap -> sorted list
         ranked_list = sorted(top_k_heap, key=lambda item: item[0], reverse=True)
         return [{"id": doc_id, "score": score} for score, doc_id in ranked_list]
-    
+
     def _build_es_query(self, node, search_fields: list) -> dict:
         """
         About:
@@ -589,7 +562,7 @@ class QueryProcessingEngine:
             doc_store_handle (Any): Handle to the document store (e.g., RocksDB DB instance).
             redis_client (Any): Redis client instance if using Redis as document store.
             index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
-            optim (str): The optimization strategy used (e.g., EARLYSTOPPING, NONE).
+            optim (str): The optimization strategy used (e.g., OPTIMISED, NONE).
 
         Returns:
         -------
@@ -626,7 +599,7 @@ class QueryProcessingEngine:
         ranked_docs = []
         
         if self.qproc == QueryProc.TERM.name:
-            ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
+            ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type)
         elif self.qproc == QueryProc.DOC.name:
             ranked_docs = self._rank_documents_daat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
         else:
@@ -715,7 +688,8 @@ class QueryProcessingEngine:
             res = es_client.search(
                 index=index_id, 
                 query=es_query, 
-                _source=source
+                _source=source,
+                size=ES_RESULTS_SIZE
             )
 
             return res

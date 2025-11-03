@@ -119,11 +119,11 @@ python3 main.py # To run in auto mode add the flag "--mode auto". But manual mod
 # Manipulate the indices
 python3 main.py # To run in auto mode (from config file) add the flag "--mode config". But manual mode is recommended as it gives you more control over indexing your data
 
-# Generate queries
-python3 generate_queries.py --num_queries <N_QUERIES> --index_id <INDEX_ID> --output_file <PATH_TO_QUERIES_JSON>
+# Generate queries (Make sure that you run the main.py file and create the index from the data before proceeding as generating queries requires prebuild index)
+python3 generate_queries.py -n <N_QUERIES> -d <DATASET> -i <INDEX_ID> -o <PATH_TO_OUTPUT_JSON_FILE>
 
 # Generate the query outputs from elasticsearch to compare against custom index
-python3 setup_queries.py --path <PATH_TO_QUERIES_JSON>
+python3 setup_queries.py --path <PATH_TO_QUERIES_JSON> --attributes <ATTR1> <ATTR2> # Multiple spaced attributes on which the dataset was indexed
 
 # Performance Testing
 python3 performance_metrics.py

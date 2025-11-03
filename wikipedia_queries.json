@@ -1,0 +1,810 @@
+{
+    "index_id": "wikipedia_index",
+    "n_docs_indexed": -1,
+    "preprocessing_settings": null,
+    "search_fields": null,
+    "attributes_indexed": null,
+    "max_results": null,
+    "queries": [
+        {
+            "query": "\"cop\" AND \"murphi\"",
+            "docs": []
+        },
+        {
+            "query": "\"previou\" AND \"eight\"",
+            "docs": []
+        },
+        {
+            "query": "(\"center\" OR \"adverti\") AND (\"node\" OR \"vessel\")",
+            "docs": []
+        },
+        {
+            "query": "\"lure\" AND NOT \"marin\"",
+            "docs": []
+        },
+        {
+            "query": "\"gdp\" AND NOT \"african\"",
+            "docs": []
+        },
+        {
+            "query": "\"protect\" AND NOT \"present\"",
+            "docs": []
+        },
+        {
+            "query": "\"richest\"",
+            "docs": []
+        },
+        {
+            "query": "(\"accu\" AND \"algebra\") OR \"negro\"",
+            "docs": []
+        },
+        {
+            "query": "\"enter\" OR \"renounc\"",
+            "docs": []
+        },
+        {
+            "query": "\"detail\"",
+            "docs": []
+        },
+        {
+            "query": "(\"contin\" OR \"mc\") AND NOT \"india\"",
+            "docs": []
+        },
+        {
+            "query": "(\"father\" AND \"rai\") OR (\"stay\" AND \"carpet\")",
+            "docs": []
+        },
+        {
+            "query": "\"appli\" AND \"bomb\"",
+            "docs": []
+        },
+        {
+            "query": "(\"kong\" AND \"cb\") AND (\"declin\" OR \"chestnut\")",
+            "docs": []
+        },
+        {
+            "query": "\"homosexu\" AND NOT \"avoid\"",
+            "docs": []
+        },
+        {
+            "query": "(\"speci\" AND \"jump\") OR (\"heat\" AND \"sink\")",
+            "docs": []
+        },
+        {
+            "query": "\"lydia\" AND NOT \"crown\"",
+            "docs": []
+        },
+        {
+            "query": "\"senior\" AND \"util\"",
+            "docs": []
+        },
+        {
+            "query": "(\"begin\" OR \"transform\") AND (\"shrine\" OR \"cooper\")",
+            "docs": []
+        },
+        {
+            "query": "\"alqaeda\" AND \"friar\"",
+            "docs": []
+        },
+        {
+            "query": "(\"cooper\" AND \"someth\") OR \"azor\"",
+            "docs": []
+        },
+        {
+            "query": "(\"send\" AND \"wound\") OR \"badg\"",
+            "docs": []
+        },
+        {
+            "query": "\"craig\" AND \"screw\"",
+            "docs": []
+        },
+        {
+            "query": "(\"enabl\" AND NOT \"medium\") OR (\"violet\" AND NOT \"instal\")",
+            "docs": []
+        },
+        {
+            "query": "(\"space\" OR \"protest\") AND (\"worn\" OR \"piec\")",
+            "docs": []
+        },
+        {
+            "query": "\"debat\" AND NOT \"fire\"",
+            "docs": []
+        },
+        {
+            "query": "(\"critic\" OR \"normal\") AND (\"novella\" OR \"galleri\")",
+            "docs": []
+        },
+        {
+            "query": "\"basketb\"",
+            "docs": []
+        },
+        {
+            "query": "\"pend\" AND NOT \"rai\"",
+            "docs": []
+        },
+        {
+            "query": "(\"employ\" OR \"sunderland\") AND NOT \"reach\"",
+            "docs": []
+        },
+        {
+            "query": "\"sc\" AND NOT \"believ\"",
+            "docs": []
+        },
+        {
+            "query": "(\"money\" AND \"duiker\") AND (\"worker\" OR \"sk\")",
+            "docs": []
+        },
+        {
+            "query": "(\"offer\" OR \"journal\") AND (\"slam\" OR \"stage\")",
+            "docs": []
+        },
+        {
+            "query": "(\"improv\" OR \"bohemian\") AND NOT \"level\"",
+            "docs": []
+        },
+        {
+            "query": "\"coach\" AND \"mexican\"",
+            "docs": []
+        },
+        {
+            "query": "(\"poland\" OR \"chlorin\") AND NOT \"support\"",
+            "docs": []
+        },
+        {
+            "query": "(\"central\" OR \"edg\") AND (\"thomson\" OR \"strong\")",
+            "docs": []
+        },
+        {
+            "query": "(\"han\" AND \"commiss\") OR \"commanderinchief\"",
+            "docs": []
+        },
+        {
+            "query": "\"attent\"",
+            "docs": []
+        },
+        {
+            "query": "(\"compo\" OR \"recip\") AND NOT \"within\"",
+            "docs": []
+        },
+        {
+            "query": "(\"opportun\" AND \"complex\") OR \"cat\"",
+            "docs": []
+        },
+        {
+            "query": "(\"box\" AND \"polic\") OR \"showca\"",
+            "docs": []
+        },
+        {
+            "query": "\"literatur\"",
+            "docs": []
+        },
+        {
+            "query": "\"singl\" AND \"treat\"",
+            "docs": []
+        },
+        {
+            "query": "\"fail\" AND NOT \"event\"",
+            "docs": []
+        },
+        {
+            "query": "\"spill\"",
+            "docs": []
+        },
+        {
+            "query": "\"slope\"",
+            "docs": []
+        },
+        {
+            "query": "(\"michigan\" OR \"rahman\") AND NOT \"experi\"",
+            "docs": []
+        },
+        {
+            "query": "(\"battalion\" AND \"maid\") AND (\"princ\" OR \"tomato\")",
+            "docs": []
+        },
+        {
+            "query": "(\"equat\" OR \"reorgani\") AND NOT \"popul\"",
+            "docs": []
+        },
+        {
+            "query": "(\"whose\" AND \"assum\") OR \"rahman\"",
+            "docs": []
+        },
+        {
+            "query": "(\"thought\" OR \"allophon\") AND NOT \"council\"",
+            "docs": []
+        },
+        {
+            "query": "\"transit\"",
+            "docs": []
+        },
+        {
+            "query": "\"provid\" AND \"loss\"",
+            "docs": []
+        },
+        {
+            "query": "\"protein\" AND \"argu\"",
+            "docs": []
+        },
+        {
+            "query": "(\"ontario\" AND \"greg\") AND (\"scene\" OR \"filament\")",
+            "docs": []
+        },
+        {
+            "query": "\"fall\" AND \"permit\"",
+            "docs": []
+        },
+        {
+            "query": "\"intend\" AND \"centr\"",
+            "docs": []
+        },
+        {
+            "query": "(\"comic\" AND \"colour\") OR \"dare\"",
+            "docs": []
+        },
+        {
+            "query": "(\"administr\" AND \"drug\") OR (\"togeth\" AND \"hussein\")",
+            "docs": []
+        },
+        {
+            "query": "(\"resid\" AND NOT \"line\") OR (\"singh\" AND NOT \"taken\")",
+            "docs": []
+        },
+        {
+            "query": "(\"percent\" AND NOT \"initi\") OR (\"nolan\" AND NOT \"far\")",
+            "docs": []
+        },
+        {
+            "query": "\"special\" AND \"et\"",
+            "docs": []
+        },
+        {
+            "query": "\"guitarist\" OR \"canari\"",
+            "docs": []
+        },
+        {
+            "query": "(\"certain\" AND \"varsiti\") AND (\"doubl\" OR \"hd\")",
+            "docs": []
+        },
+        {
+            "query": "(\"haplogroup\" AND \"ground\") OR \"onli\"",
+            "docs": []
+        },
+        {
+            "query": "\"amount\"",
+            "docs": []
+        },
+        {
+            "query": "\"albuquerqu\" AND NOT \"market\"",
+            "docs": []
+        },
+        {
+            "query": "(\"offer\" OR \"professor\") AND (\"bachchan\" OR \"censu\")",
+            "docs": []
+        },
+        {
+            "query": "\"arbor\" AND NOT \"densiti\"",
+            "docs": []
+        },
+        {
+            "query": "(\"receiv\" AND \"strategi\") OR (\"paul\" AND \"spaniard\")",
+            "docs": []
+        },
+        {
+            "query": "\"ed\" AND NOT \"politician\"",
+            "docs": []
+        },
+        {
+            "query": "\"associ\" AND \"fuel\"",
+            "docs": []
+        },
+        {
+            "query": "\"eleanor\"",
+            "docs": []
+        },
+        {
+            "query": "(\"squar\" OR \"sufi\") AND NOT \"church\"",
+            "docs": []
+        },
+        {
+            "query": "(\"visit\" OR \"dhaka\") AND NOT \"juli\"",
+            "docs": []
+        },
+        {
+            "query": "\"specif\" OR \"remix\"",
+            "docs": []
+        },
+        {
+            "query": "(\"contain\" AND \"request\") OR (\"brazil\" AND \"oust\")",
+            "docs": []
+        },
+        {
+            "query": "\"dri\" AND \"capabl\"",
+            "docs": []
+        },
+        {
+            "query": "\"regist\"",
+            "docs": []
+        },
+        {
+            "query": "\"sydney\" AND NOT \"though\"",
+            "docs": []
+        },
+        {
+            "query": "\"savannah\"",
+            "docs": []
+        },
+        {
+            "query": "\"korea\"",
+            "docs": []
+        },
+        {
+            "query": "(\"network\" AND \"democrat\") OR (\"earlier\" AND \"pant\")",
+            "docs": []
+        },
+        {
+            "query": "\"word\" AND \"modul\"",
+            "docs": []
+        },
+        {
+            "query": "(\"program\" OR \"wing\") AND (\"cart\" OR \"glass\")",
+            "docs": []
+        },
+        {
+            "query": "(\"thu\" OR \"acr\") AND NOT \"creat\"",
+            "docs": []
+        },
+        {
+            "query": "\"prejud\" AND NOT \"white\"",
+            "docs": []
+        },
+        {
+            "query": "(\"winner\" AND \"inspir\") OR \"liberti\"",
+            "docs": []
+        },
+        {
+            "query": "\"lagoon\"",
+            "docs": []
+        },
+        {
+            "query": "\"particularli\" OR \"anchor\"",
+            "docs": []
+        },
+        {
+            "query": "\"justif\" AND NOT \"sea\"",
+            "docs": []
+        },
+        {
+            "query": "\"phonet\" AND NOT \"peter\"",
+            "docs": []
+        },
+        {
+            "query": "(\"announc\" OR \"real\") AND (\"rescu\" OR \"facil\")",
+            "docs": []
+        },
+        {
+            "query": "\"consul\" AND NOT \"nine\"",
+            "docs": []
+        },
+        {
+            "query": "\"champion\" OR \"firstev\"",
+            "docs": []
+        },
+        {
+            "query": "(\"box\" AND \"uncommon\") AND (\"walk\" OR \"imper\")",
+            "docs": []
+        },
+        {
+            "query": "\"switch\" AND NOT \"novemb\"",
+            "docs": []
+        },
+        {
+            "query": "\"agreement\"",
+            "docs": []
+        },
+        {
+            "query": "\"vice\"",
+            "docs": []
+        },
+        {
+            "query": "\"flower\" AND \"user\"",
+            "docs": []
+        },
+        {
+            "query": "\"navi\" OR \"allegedli\"",
+            "docs": []
+        },
+        {
+            "query": "\"aid\" AND \"failur\"",
+            "docs": []
+        },
+        {
+            "query": "(\"confirm\" OR \"audio\") AND NOT \"command\"",
+            "docs": []
+        },
+        {
+            "query": "\"forb\" AND NOT \"pennsylvania\"",
+            "docs": []
+        },
+        {
+            "query": "\"distinguish\" OR \"extraordinari\"",
+            "docs": []
+        },
+        {
+            "query": "\"hon\" AND \"amazon\"",
+            "docs": []
+        },
+        {
+            "query": "\"collector\"",
+            "docs": []
+        },
+        {
+            "query": "(\"atlant\" AND \"resourc\") OR \"aesthet\"",
+            "docs": []
+        },
+        {
+            "query": "(\"highway\" AND \"psychic\") AND (\"weekli\" OR \"gospel\")",
+            "docs": []
+        },
+        {
+            "query": "\"paint\" AND NOT \"health\"",
+            "docs": []
+        },
+        {
+            "query": "\"studi\" AND \"algebra\"",
+            "docs": []
+        },
+        {
+            "query": "\"commiss\" OR \"submarin\"",
+            "docs": []
+        },
+        {
+            "query": "\"lama\"",
+            "docs": []
+        },
+        {
+            "query": "(\"save\" AND \"catalogu\") AND (\"rome\" OR \"skier\")",
+            "docs": []
+        },
+        {
+            "query": "(\"mid\" OR \"intrin\") AND NOT \"go\"",
+            "docs": []
+        },
+        {
+            "query": "\"kart\" AND \"nerv\"",
+            "docs": []
+        },
+        {
+            "query": "\"frank\" AND NOT \"stori\"",
+            "docs": []
+        },
+        {
+            "query": "\"implant\" AND NOT \"j\"",
+            "docs": []
+        },
+        {
+            "query": "(\"arrang\" AND \"struggl\") OR \"tyre\"",
+            "docs": []
+        },
+        {
+            "query": "(\"critic\" OR \"itali\") AND (\"trinidad\" OR \"uk\")",
+            "docs": []
+        },
+        {
+            "query": "\"twoyear\" AND \"abbasid\"",
+            "docs": []
+        },
+        {
+            "query": "\"hand\" OR \"amazon\"",
+            "docs": []
+        },
+        {
+            "query": "\"give\" AND \"compet\"",
+            "docs": []
+        },
+        {
+            "query": "\"mother\" OR \"curb\"",
+            "docs": []
+        },
+        {
+            "query": "(\"ground\" AND \"tribut\") AND (\"adopt\" OR \"hide\")",
+            "docs": []
+        },
+        {
+            "query": "\"saber\" AND \"cello\"",
+            "docs": []
+        },
+        {
+            "query": "(\"within\" OR \"lost\") AND (\"loan\" OR \"eg\")",
+            "docs": []
+        },
+        {
+            "query": "\"pod\" AND NOT \"eventu\"",
+            "docs": []
+        },
+        {
+            "query": "(\"comedi\" AND NOT \"speci\") OR (\"ieee\" AND NOT \"degr\")",
+            "docs": []
+        },
+        {
+            "query": "(\"guitar\" AND \"architect\") OR \"fda\"",
+            "docs": []
+        },
+        {
+            "query": "\"romant\" AND NOT \"human\"",
+            "docs": []
+        },
+        {
+            "query": "\"ufc\" AND NOT \"individu\"",
+            "docs": []
+        },
+        {
+            "query": "\"reach\" AND \"obtain\"",
+            "docs": []
+        },
+        {
+            "query": "(\"local\" OR \"flower\") AND (\"sayyaf\" OR \"transform\")",
+            "docs": []
+        },
+        {
+            "query": "\"jeremiah\" AND NOT \"site\"",
+            "docs": []
+        },
+        {
+            "query": "\"finish\" AND \"draft\"",
+            "docs": []
+        },
+        {
+            "query": "\"zealand\" OR \"mackenzi\"",
+            "docs": []
+        },
+        {
+            "query": "\"bodmin\" AND NOT \"date\"",
+            "docs": []
+        },
+        {
+            "query": "\"colleg\" AND \"ice\"",
+            "docs": []
+        },
+        {
+            "query": "\"owl\" AND \"serum\"",
+            "docs": []
+        },
+        {
+            "query": "\"imper\"",
+            "docs": []
+        },
+        {
+            "query": "(\"boston\" OR \"blossom\") AND NOT \"word\"",
+            "docs": []
+        },
+        {
+            "query": "(\"upper\" OR \"burden\") AND NOT \"cau\"",
+            "docs": []
+        },
+        {
+            "query": "\"civili\" AND \"songwrit\"",
+            "docs": []
+        },
+        {
+            "query": "\"amount\"",
+            "docs": []
+        },
+        {
+            "query": "\"inspect\" AND NOT \"cau\"",
+            "docs": []
+        },
+        {
+            "query": "(\"shoot\" AND \"mount\") OR \"templat\"",
+            "docs": []
+        },
+        {
+            "query": "\"columbia\"",
+            "docs": []
+        },
+        {
+            "query": "\"allophon\" AND \"afor\"",
+            "docs": []
+        },
+        {
+            "query": "\"rapper\" AND NOT \"chapter\"",
+            "docs": []
+        },
+        {
+            "query": "\"man\" AND \"estim\"",
+            "docs": []
+        },
+        {
+            "query": "(\"directli\" AND \"lorrain\") AND (\"adverti\" OR \"iceland\")",
+            "docs": []
+        },
+        {
+            "query": "(\"edg\" AND \"mimic\") AND (\"athlet\" OR \"unpopular\")",
+            "docs": []
+        },
+        {
+            "query": "(\"late\" OR \"spent\") AND (\"spa\" OR \"knowledg\")",
+            "docs": []
+        },
+        {
+            "query": "(\"studio\" AND NOT \"royal\") OR (\"mangrov\" AND NOT \"disambigu\")",
+            "docs": []
+        },
+        {
+            "query": "\"tale\" AND NOT \"matter\"",
+            "docs": []
+        },
+        {
+            "query": "\"adult\" OR \"transylvanian\"",
+            "docs": []
+        },
+        {
+            "query": "\"noel\"",
+            "docs": []
+        },
+        {
+            "query": "\"carbon\" AND NOT \"southern\"",
+            "docs": []
+        },
+        {
+            "query": "(\"traffic\" OR \"screenwrit\") AND NOT \"western\"",
+            "docs": []
+        },
+        {
+            "query": "\"km\" OR \"charlott\"",
+            "docs": []
+        },
+        {
+            "query": "\"anecdot\" AND NOT \"final\"",
+            "docs": []
+        },
+        {
+            "query": "(\"airport\" AND \"qualiti\") OR \"lumber\"",
+            "docs": []
+        },
+        {
+            "query": "(\"treati\" OR \"aftermath\") AND NOT \"return\"",
+            "docs": []
+        },
+        {
+            "query": "\"poland\" OR \"logo\"",
+            "docs": []
+        },
+        {
+            "query": "\"blood\" AND \"reject\"",
+            "docs": []
+        },
+        {
+            "query": "\"eccentr\" AND \"cane\"",
+            "docs": []
+        },
+        {
+            "query": "\"detail\" AND NOT \"collect\"",
+            "docs": []
+        },
+        {
+            "query": "\"arrest\" OR \"paraguay\"",
+            "docs": []
+        },
+        {
+            "query": "\"indonesia\" AND \"köppen\"",
+            "docs": []
+        },
+        {
+            "query": "\"jacksonvil\" AND \"assess\"",
+            "docs": []
+        },
+        {
+            "query": "(\"mediev\" AND \"disabl\") AND (\"uniqu\" OR \"bengali\")",
+            "docs": []
+        },
+        {
+            "query": "(\"bowl\" OR \"arama\") AND NOT \"european\"",
+            "docs": []
+        },
+        {
+            "query": "(\"disea\" OR \"roland\") AND NOT \"accord\"",
+            "docs": []
+        },
+        {
+            "query": "\"epithet\"",
+            "docs": []
+        },
+        {
+            "query": "\"politician\" AND \"port\"",
+            "docs": []
+        },
+        {
+            "query": "\"similar\" AND \"medal\"",
+            "docs": []
+        },
+        {
+            "query": "\"bomber\" AND NOT \"blue\"",
+            "docs": []
+        },
+        {
+            "query": "(\"east\" AND \"variant\") OR (\"fight\" AND \"maritim\")",
+            "docs": []
+        },
+        {
+            "query": "(\"painter\" AND NOT \"inform\") OR (\"steph\" AND NOT \"must\")",
+            "docs": []
+        },
+        {
+            "query": "\"dartmouth\" AND \"garland\"",
+            "docs": []
+        },
+        {
+            "query": "\"jim\" AND \"geographi\"",
+            "docs": []
+        },
+        {
+            "query": "(\"destroy\" AND \"platinum\") AND (\"battalion\" OR \"arbor\")",
+            "docs": []
+        },
+        {
+            "query": "\"arteri\" AND NOT \"featur\"",
+            "docs": []
+        },
+        {
+            "query": "(\"unknown\" OR \"dm\") AND NOT \"construct\"",
+            "docs": []
+        },
+        {
+            "query": "(\"presid\" OR \"low\") AND (\"fairfield\" OR \"deputi\")",
+            "docs": []
+        },
+        {
+            "query": "\"awardwin\"",
+            "docs": []
+        },
+        {
+            "query": "\"kernel\"",
+            "docs": []
+        },
+        {
+            "query": "(\"without\" OR \"centr\") AND (\"ignit\" OR \"enjoy\")",
+            "docs": []
+        },
+        {
+            "query": "(\"copi\" AND \"infinit\") AND (\"biographi\" OR \"holm\")",
+            "docs": []
+        },
+        {
+            "query": "\"conver\" AND \"across\"",
+            "docs": []
+        },
+        {
+            "query": "\"million\" AND \"corp\"",
+            "docs": []
+        },
+        {
+            "query": "\"lesbian\"",
+            "docs": []
+        },
+        {
+            "query": "\"mantl\" AND NOT \"door\"",
+            "docs": []
+        },
+        {
+            "query": "\"lefthand\"",
+            "docs": []
+        },
+        {
+            "query": "(\"held\" OR \"alignc\") AND (\"chick\" OR \"fame\")",
+            "docs": []
+        },
+        {
+            "query": "\"said\" AND \"shop\"",
+            "docs": []
+        },
+        {
+            "query": "(\"christ\" AND \"craft\") AND (\"elimin\" OR \"afterlif\")",
+            "docs": []
+        },
+        {
+            "query": "(\"oppon\" AND NOT \"move\") OR (\"dental\" AND NOT \"whose\")",
+            "docs": []
+        }
+    ]
+}

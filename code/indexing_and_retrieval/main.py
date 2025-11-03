@@ -9,7 +9,7 @@ from rich.console import Console
 from indexes import ESIndex, CustomIndex, BaseIndex
 from utils import Style, clear_screen, wait_for_enter
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
-from constants import ES_HOST, ES_PORT, ES_SCHEME, IndexType, DatasetType, StatusCode, INDEX_SETTINGS, MAX_RESULTS, MAX_NUM_DOCUMENTS
+from constants import ES_HOST, ES_PORT, ES_SCHEME, IndexType, DatasetType, StatusCode, MAX_RESULTS, MAX_NUM_DOCUMENTS, CUST_INDEX_SETTINGS
 
 
 # ======================= GLOBALS ========================
@@ -195,11 +195,11 @@ def menu() -> None:
                 idx = ESIndex(ES_HOST, ES_PORT, ES_SCHEME, _type.name)
                 settings.append("Index Type: ESIndex")
             case IndexType.CustomIndex:
-                info: str = INDEX_SETTINGS.get("info", "NONE")
-                dstore: str = INDEX_SETTINGS.get("dstore", "NONE")
-                qproc: str = INDEX_SETTINGS.get("qproc", "NONE")
-                compr: str = INDEX_SETTINGS.get("compr", "NONE")
-                optim: str = INDEX_SETTINGS.get("optim", "NONE")
+                info: str = CUST_INDEX_SETTINGS.get("info", "NONE")
+                dstore: str = CUST_INDEX_SETTINGS.get("dstore", "NONE")
+                qproc: str = CUST_INDEX_SETTINGS.get("qproc", "NONE")
+                compr: str = CUST_INDEX_SETTINGS.get("compr", "NONE")
+                optim: str = CUST_INDEX_SETTINGS.get("optim", "NONE")
                 print(f"{Style.FG_YELLOW}Using Custom Index with settings \n\tInfo: {info}, \n\tData Store: {dstore}, \n\tQuery Processor: {qproc}, \n\tCompression: {compr}, \n\tOptimization: {optim}.{Style.RESET} \nTo change, modify config.yaml file.\n")
                 idx = CustomIndex(_type.name, info, dstore, qproc, compr, optim)
                 settings.append("Index Type: CustomIndex")
@@ -323,6 +323,7 @@ def menu() -> None:
                         continue
                     
                     settings.append(f"Index: {index_id}" if index_id != "" else "Index: All")
+                    idx.load_index(index_id)
 
                     while True:
                         print_settings()

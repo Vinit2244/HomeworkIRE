@@ -765,15 +765,17 @@ class CustomIndex(BaseIndex):
             A JSON string with the query results formatted like Elasticsearch, or StatusCode on failure.
         """
 
+        if self.loaded_index is None:
+            return StatusCode.INDEX_NOT_LOADED
+
         index_id = self._add_ext_to_index_id(index_id)
         if index_id == StatusCode.INDEX_NOT_FOUND:
             return StatusCode.INDEX_NOT_FOUND
 
-        self.load_index(index_id)
         if not self.loaded_index:
             return StatusCode.ERROR_ACCESSING_INDEX
 
-        engine = QueryProcessingEngine(self.compr, self.qproc)
+        engine = QueryProcessingEngine(self.qproc)
 
         # Get all document IDs (for NOT operations)
         all_doc_ids = self.list_indexed_files(index_id)

@@ -16,8 +16,8 @@ REDIS_PORT             : int  = config.get("redis", {}).get("port", 6379)
 REDIS_DB               : int  = config.get("redis", {}).get("db", 0)
 
 DATA_SETTINGS          : dict = config.get("data", {})
-INDEX_SETTINGS         : dict = config.get("index", {})
 PREPROCESSING_SETTINGS : dict = config.get("preprocessing", {})
+CUST_INDEX_SETTINGS    : dict = config.get("cust_index_settings", {})
 
 MAX_RESULTS            : int  = config.get("max_results", 50)
 SEARCH_FIELDS          : str  = config.get("search_fields", ["text"])
@@ -72,9 +72,8 @@ class Compression(Enum):
 class Optimizations(Enum):
     """
     Enumeration for different optimization techniques."""
-    NONE         : str = '0'
-    THRESHOLDING : str = 'th'
-    EARLYSTOPPING: str = 'es'
+    NONE     : str = '0'
+    OPTIMISED: str = 'O'
 
 
 class QueryProc(Enum):
@@ -99,6 +98,7 @@ class StatusCode(Enum):
     QUERY_FAILED         : int = 1005
     INDEX_NOT_FOUND      : int = 1006
     INDEX_ALREADY_EXISTS : int = 1007
+    INDEX_NOT_LOADED     : int = 1008
     
     UNKNOWN_ERROR        : int = 9999
 

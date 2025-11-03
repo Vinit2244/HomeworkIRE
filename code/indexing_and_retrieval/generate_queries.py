@@ -4,20 +4,20 @@ import random
 import argparse
 from utils import Style
 from typing import List, Dict
-from constants import INDEX_SETTINGS, MAX_NUM_DOCUMENTS
+from constants import MAX_NUM_DOCUMENTS
 from dataset_managers.dataset_news import get_news_dataset_handler
 from dataset_managers.dataset_wikipedia import get_wikipedia_dataset_handler
 
 
 # ======================== GLOBALS ========================
 # Word pools based on frequency rank (to filter out stop-words and typos)
-MIN_WORD_FREQ = 10              # Ignore words with frequency less than this
-HIGH_FREQ_RANK_START = 100      # Start high-freq pool after top 100 words (likely stop words)
-HIGH_FREQ_RANK_END = 500
-MID_FREQ_RANK_START = 501
-MID_FREQ_RANK_END = 2000
-LOW_FREQ_RANK_START = 2001
-LOW_FREQ_RANK_END = 10000
+MIN_WORD_FREQ        = 10     # Ignore words with frequency less than this
+HIGH_FREQ_RANK_START = 100    # Start high-freq pool after top 100 words (likely stop words)
+HIGH_FREQ_RANK_END   = 500
+MID_FREQ_RANK_START  = 501
+MID_FREQ_RANK_END    = 2000
+LOW_FREQ_RANK_START  = 2001
+LOW_FREQ_RANK_END    = 10000
 
 # Templates for generating diverse queries
 # _H_ = High-freq word, _M_ = Mid-freq word, _L_ = Low-freq word
@@ -41,7 +41,7 @@ QUERY_TEMPLATES = [
 
 
 # ======================= FUNCTIONS =======================
-def get_dataset_handler():
+def get_dataset_handler(dataset_name: str) -> object:
     """
     About:
     ------
@@ -56,14 +56,12 @@ def get_dataset_handler():
         An instance of the dataset handler (NewsDataset or WikipediaDataset).
     """
 
-    dataset_name = INDEX_SETTINGS.get("dataset", "News")
-
     print(f"{Style.FG_CYAN}Loading dataset handler for: {dataset_name}{Style.RESET}")
 
     if dataset_name == "News":
         return get_news_dataset_handler(MAX_NUM_DOCUMENTS, verbose=False)
     elif dataset_name == "Wikipedia":
-        return get_wikipedia_dataset_handler(verbose=False)
+        return get_wikipedia_dataset_handler(MAX_NUM_DOCUMENTS, verbose=False)
     else:
         print(f"{Style.FG_RED}Error: Unknown dataset '{dataset_name}' in config.yaml{Style.RESET}")
         exit(1)
@@ -181,6 +179,12 @@ def main():
         help="Number of queries to generate."
     )
     parser.add_argument(
+        '-d', '--dataset', 
+        type=str, 
+        required=True, 
+        help="Dataset to use for word frequency calculation (e.g., 'News' or 'Wikipedia')."
+    )
+    parser.add_argument(
         '-i', '--index_id', 
         type=str, 
         required=True, 
@@ -195,7 +199,7 @@ def main():
     args = parser.parse_args()
 
     # Get Dataset Handler
-    handler = get_dataset_handler()
+    handler = get_dataset_handler(args.dataset)
 
     # Calculate Word Frequencies
     print(f"\n{Style.FG_CYAN}Calculating word frequencies... (This may take a while){Style.RESET}")

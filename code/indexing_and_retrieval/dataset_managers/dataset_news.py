@@ -327,6 +327,8 @@ class NewsDataset(Dataset):
             Tuple[str, dict]: A tuple containing the unique identifier (str) and a dictionary of the remaining attributes.
         """
 
+        seen_ids = set()
+
         for f in self._file_iterator():
             # Ignoring the first value which is the total count
             if type(f) is int:
@@ -336,6 +338,9 @@ class NewsDataset(Dataset):
             try:
                 # Assuming first attribute is always unique identifier
                 uuid = str(data[attributes[0]])
+                if uuid in seen_ids:
+                    continue  # Skip duplicate ids
+                seen_ids.add(uuid)
                 payload = {attr: data[attr] for attr in attributes[1:]}
                 
                 # Returning a dict so that we can easily extend it in future if needed

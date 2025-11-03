@@ -1,0 +1,810 @@
+{
+    "index_id": "news_index",
+    "n_docs_indexed": -1,
+    "preprocessing_settings": null,
+    "search_fields": null,
+    "attributes_indexed": null,
+    "max_results": null,
+    "queries": [
+        {
+            "query": "\"supplier\" AND \"alarm\"",
+            "docs": []
+        },
+        {
+            "query": "\"uso\" AND NOT \"de\"",
+            "docs": []
+        },
+        {
+            "query": "(\"media\" AND \"explain\") OR (\"bueno\" AND \"regularli\")",
+            "docs": []
+        },
+        {
+            "query": "(\"david\" OR \"árbole\") AND NOT \"event\"",
+            "docs": []
+        },
+        {
+            "query": "\"plantbas\" AND NOT \"mese\"",
+            "docs": []
+        },
+        {
+            "query": "\"ogni\" AND NOT \"half\"",
+            "docs": []
+        },
+        {
+            "query": "\"dado\"",
+            "docs": []
+        },
+        {
+            "query": "(\"excel\" OR \"agregó\") AND NOT \"según\"",
+            "docs": []
+        },
+        {
+            "query": "(\"inundacion\" AND \"folk\") AND (\"copi\" OR \"microsoft\")",
+            "docs": []
+        },
+        {
+            "query": "\"rais\" AND NOT \"san\"",
+            "docs": []
+        },
+        {
+            "query": "\"engag\" AND NOT \"final\"",
+            "docs": []
+        },
+        {
+            "query": "\"residenti\" AND \"alien\"",
+            "docs": []
+        },
+        {
+            "query": "\"vote\" AND \"peac\"",
+            "docs": []
+        },
+        {
+            "query": "\"rigor\" AND NOT \"labor\"",
+            "docs": []
+        },
+        {
+            "query": "(\"adult\" AND \"heighten\") AND (\"grado\" OR \"simpson\")",
+            "docs": []
+        },
+        {
+            "query": "\"tema\" AND \"altern\"",
+            "docs": []
+        },
+        {
+            "query": "\"suprem\"",
+            "docs": []
+        },
+        {
+            "query": "(\"respons\" OR \"expert\") AND (\"antibodydrug\" OR \"brother\")",
+            "docs": []
+        },
+        {
+            "query": "(\"और\" AND \"machin\") OR \"engagé\"",
+            "docs": []
+        },
+        {
+            "query": "\"posibilidad\" AND NOT \"municipio\"",
+            "docs": []
+        },
+        {
+            "query": "\"cualquier\"",
+            "docs": []
+        },
+        {
+            "query": "\"ileg\" AND \"steve\"",
+            "docs": []
+        },
+        {
+            "query": "(\"center\" AND \"apena\") OR (\"última\" AND \"delic\")",
+            "docs": []
+        },
+        {
+            "query": "(\"per\" AND \"specif\") OR (\"accus\" AND \"librari\")",
+            "docs": []
+        },
+        {
+            "query": "\"turn\" AND \"suit\"",
+            "docs": []
+        },
+        {
+            "query": "\"agenc\" AND \"pueblo\"",
+            "docs": []
+        },
+        {
+            "query": "\"tratamiento\" AND NOT \"half\"",
+            "docs": []
+        },
+        {
+            "query": "(\"vision\" AND \"far\") OR \"sand\"",
+            "docs": []
+        },
+        {
+            "query": "\"siglo\" AND NOT \"present\"",
+            "docs": []
+        },
+        {
+            "query": "\"side\" AND \"strateg\"",
+            "docs": []
+        },
+        {
+            "query": "\"impress\" AND NOT \"secur\"",
+            "docs": []
+        },
+        {
+            "query": "(\"hear\" AND \"ny\") AND (\"debat\" OR \"proteína\")",
+            "docs": []
+        },
+        {
+            "query": "(\"fire\" AND \"nfl\") OR (\"saw\" AND \"african\")",
+            "docs": []
+        },
+        {
+            "query": "(\"aviso\" AND \"valor\") OR \"du\"",
+            "docs": []
+        },
+        {
+            "query": "(\"distribut\" AND \"puls\") AND (\"cours\" OR \"abrir\")",
+            "docs": []
+        },
+        {
+            "query": "\"voce\" AND NOT \"grow\"",
+            "docs": []
+        },
+        {
+            "query": "\"según\" AND \"cultur\"",
+            "docs": []
+        },
+        {
+            "query": "(\"disrupt\" AND NOT \"someth\") OR (\"múltipl\" AND NOT \"primera\")",
+            "docs": []
+        },
+        {
+            "query": "\"uae\" AND NOT \"especialment\"",
+            "docs": []
+        },
+        {
+            "query": "\"googl\" AND NOT \"big\"",
+            "docs": []
+        },
+        {
+            "query": "\"gustavo\"",
+            "docs": []
+        },
+        {
+            "query": "\"attent\" AND NOT \"across\"",
+            "docs": []
+        },
+        {
+            "query": "\"encuentran\" AND NOT \"thing\"",
+            "docs": []
+        },
+        {
+            "query": "(\"maintain\" AND \"afternoon\") OR \"financièr\"",
+            "docs": []
+        },
+        {
+            "query": "(\"run\" AND \"washington\") OR (\"una\" AND \"notizia\")",
+            "docs": []
+        },
+        {
+            "query": "\"seri\" AND \"coast\"",
+            "docs": []
+        },
+        {
+            "query": "(\"jesu\" AND \"agua\") OR (\"trial\" AND \"insult\")",
+            "docs": []
+        },
+        {
+            "query": "\"factor\"",
+            "docs": []
+        },
+        {
+            "query": "(\"five\" AND \"independ\") OR \"помощь\"",
+            "docs": []
+        },
+        {
+            "query": "(\"christian\" AND \"rs\") OR (\"thousand\" AND \"trê\")",
+            "docs": []
+        },
+        {
+            "query": "(\"goal\" OR \"evid\") AND (\"trim\" OR \"equip\")",
+            "docs": []
+        },
+        {
+            "query": "\"petition\" AND NOT \"recent\"",
+            "docs": []
+        },
+        {
+            "query": "(\"sometim\" AND \"rugbi\") AND (\"contain\" OR \"huracán\")",
+            "docs": []
+        },
+        {
+            "query": "\"announc\" AND \"sun\"",
+            "docs": []
+        },
+        {
+            "query": "\"revers\"",
+            "docs": []
+        },
+        {
+            "query": "\"confer\" AND \"william\"",
+            "docs": []
+        },
+        {
+            "query": "(\"p\" AND \"juicio\") AND (\"restor\" OR \"roof\")",
+            "docs": []
+        },
+        {
+            "query": "\"récord\"",
+            "docs": []
+        },
+        {
+            "query": "\"turn\" AND \"all\"",
+            "docs": []
+        },
+        {
+            "query": "\"nigeria\"",
+            "docs": []
+        },
+        {
+            "query": "(\"न\" AND NOT \"investig\") OR (\"млн\" AND NOT \"explor\")",
+            "docs": []
+        },
+        {
+            "query": "\"viern\" AND \"for\"",
+            "docs": []
+        },
+        {
+            "query": "\"diagnóstico\"",
+            "docs": []
+        },
+        {
+            "query": "\"alaska\"",
+            "docs": []
+        },
+        {
+            "query": "\"shadow\" AND \"belaru\"",
+            "docs": []
+        },
+        {
+            "query": "(\"describ\" AND NOT \"practic\") OR (\"viabl\" AND NOT \"una\")",
+            "docs": []
+        },
+        {
+            "query": "\"anyth\" AND \"t\"",
+            "docs": []
+        },
+        {
+            "query": "\"further\" AND \"elijah\"",
+            "docs": []
+        },
+        {
+            "query": "\"task\"",
+            "docs": []
+        },
+        {
+            "query": "\"contribut\" AND \"quil\"",
+            "docs": []
+        },
+        {
+            "query": "\"g\" OR \"दन\"",
+            "docs": []
+        },
+        {
+            "query": "(\"talent\" AND \"désormai\") AND (\"quickli\" OR \"bass\")",
+            "docs": []
+        },
+        {
+            "query": "\"buffalo\" AND NOT \"round\"",
+            "docs": []
+        },
+        {
+            "query": "\"gallon\"",
+            "docs": []
+        },
+        {
+            "query": "\"establish\" OR \"buck\"",
+            "docs": []
+        },
+        {
+            "query": "\"wrong\" AND \"district\"",
+            "docs": []
+        },
+        {
+            "query": "\"stringent\" AND NOT \"inundacion\"",
+            "docs": []
+        },
+        {
+            "query": "\"gem\" AND NOT \"base\"",
+            "docs": []
+        },
+        {
+            "query": "(\"comput\" AND \"belaru\") AND (\"own\" OR \"jogador\")",
+            "docs": []
+        },
+        {
+            "query": "(\"find\" AND \"whole\") OR (\"race\" AND \"misconduct\")",
+            "docs": []
+        },
+        {
+            "query": "\"revel\"",
+            "docs": []
+        },
+        {
+            "query": "(\"era\" AND \"palestinien\") AND (\"defens\" OR \"publicada\")",
+            "docs": []
+        },
+        {
+            "query": "\"across\" AND \"fit\"",
+            "docs": []
+        },
+        {
+            "query": "(\"journal\" AND \"comunidad\") OR \"galleri\"",
+            "docs": []
+        },
+        {
+            "query": "\"salvat\" AND \"widespread\"",
+            "docs": []
+        },
+        {
+            "query": "(\"impress\" AND \"handl\") OR \"raven\"",
+            "docs": []
+        },
+        {
+            "query": "(\"doctor\" AND \"fe\") OR \"rajasthan\"",
+            "docs": []
+        },
+        {
+            "query": "(\"que\" OR \"evento\") AND (\"feito\" OR \"از\")",
+            "docs": []
+        },
+        {
+            "query": "\"quent\" AND NOT \"cost\"",
+            "docs": []
+        },
+        {
+            "query": "\"pued\" AND \"siempr\"",
+            "docs": []
+        },
+        {
+            "query": "\"nueva\" OR \"browser\"",
+            "docs": []
+        },
+        {
+            "query": "\"bitcoin\"",
+            "docs": []
+        },
+        {
+            "query": "(\"म\" OR \"necessit\") AND NOT \"note\"",
+            "docs": []
+        },
+        {
+            "query": "\"energia\" AND NOT \"fall\"",
+            "docs": []
+        },
+        {
+            "query": "(\"cannot\" AND \"se\") OR \"where\"",
+            "docs": []
+        },
+        {
+            "query": "\"iglesia\" AND NOT \"addit\"",
+            "docs": []
+        },
+        {
+            "query": "\"more\" OR \"unemploy\"",
+            "docs": []
+        },
+        {
+            "query": "\"crime\" AND \"movement\"",
+            "docs": []
+        },
+        {
+            "query": "(\"phase\" AND \"provinci\") AND (\"tropic\" OR \"limpieza\")",
+            "docs": []
+        },
+        {
+            "query": "(\"die\" OR \"misma\") AND (\"chemic\" OR \"review\")",
+            "docs": []
+        },
+        {
+            "query": "(\"zona\" OR \"reveal\") AND (\"aquacultur\" OR \"begin\")",
+            "docs": []
+        },
+        {
+            "query": "(\"particip\" AND \"pra\") AND (\"him\" OR \"knight\")",
+            "docs": []
+        },
+        {
+            "query": "\"merced\" AND NOT \"taylor\"",
+            "docs": []
+        },
+        {
+            "query": "\"prayer\" AND NOT \"perform\"",
+            "docs": []
+        },
+        {
+            "query": "\"tiempo\" AND \"phase\"",
+            "docs": []
+        },
+        {
+            "query": "\"behaviour\"",
+            "docs": []
+        },
+        {
+            "query": "(\"wast\" AND \"generado\") AND (\"welcom\" OR \"storia\")",
+            "docs": []
+        },
+        {
+            "query": "\"seguimo\" AND NOT \"north\"",
+            "docs": []
+        },
+        {
+            "query": "\"rachel\"",
+            "docs": []
+        },
+        {
+            "query": "(\"door\" AND \"seem\") OR \"laguna\"",
+            "docs": []
+        },
+        {
+            "query": "\"estudo\"",
+            "docs": []
+        },
+        {
+            "query": "\"press\" AND \"mensaj\"",
+            "docs": []
+        },
+        {
+            "query": "(\"hecho\" AND \"nest\") OR \"della\"",
+            "docs": []
+        },
+        {
+            "query": "\"lowest\"",
+            "docs": []
+        },
+        {
+            "query": "(\"all\" AND \"matur\") AND (\"welcom\" OR \"enclav\")",
+            "docs": []
+        },
+        {
+            "query": "\"dem\"",
+            "docs": []
+        },
+        {
+            "query": "(\"misma\" AND \"vivienda\") AND (\"if\" OR \"squad\")",
+            "docs": []
+        },
+        {
+            "query": "\"forgiv\" AND NOT \"view\"",
+            "docs": []
+        },
+        {
+            "query": "\"caus\" AND \"restor\"",
+            "docs": []
+        },
+        {
+            "query": "(\"buy\" AND \"black\") OR \"यह\"",
+            "docs": []
+        },
+        {
+            "query": "\"seek\" AND \"environment\"",
+            "docs": []
+        },
+        {
+            "query": "(\"program\" OR \"intensa\") AND (\"desafío\" OR \"naranja\")",
+            "docs": []
+        },
+        {
+            "query": "(\"tradit\" AND NOT \"high\") OR (\"reshap\" AND NOT \"firm\")",
+            "docs": []
+        },
+        {
+            "query": "(\"financ\" AND \"questão\") AND (\"afternoon\" OR \"développ\")",
+            "docs": []
+        },
+        {
+            "query": "\"council\" AND NOT \"content\"",
+            "docs": []
+        },
+        {
+            "query": "(\"friday\" OR \"inch\") AND (\"extraordinari\" OR \"mental\")",
+            "docs": []
+        },
+        {
+            "query": "(\"pressur\" OR \"discoteca\") AND NOT \"imag\"",
+            "docs": []
+        },
+        {
+            "query": "\"precis\" AND NOT \"tre\"",
+            "docs": []
+        },
+        {
+            "query": "\"emphas\" OR \"orphan\"",
+            "docs": []
+        },
+        {
+            "query": "\"sound\"",
+            "docs": []
+        },
+        {
+            "query": "\"coupl\" OR \"levi\"",
+            "docs": []
+        },
+        {
+            "query": "\"star\" AND \"for\"",
+            "docs": []
+        },
+        {
+            "query": "\"radio\"",
+            "docs": []
+        },
+        {
+            "query": "\"feito\" AND \"calcul\"",
+            "docs": []
+        },
+        {
+            "query": "(\"privaci\" AND NOT \"allow\") OR (\"ash\" AND NOT \"europ\")",
+            "docs": []
+        },
+        {
+            "query": "(\"mercado\" OR \"nott\") AND NOT \"sector\"",
+            "docs": []
+        },
+        {
+            "query": "\"anchor\" AND NOT \"him\"",
+            "docs": []
+        },
+        {
+            "query": "\"differ\" AND \"speed\"",
+            "docs": []
+        },
+        {
+            "query": "\"attaqu\"",
+            "docs": []
+        },
+        {
+            "query": "\"espanha\"",
+            "docs": []
+        },
+        {
+            "query": "\"islam\" AND NOT \"announc\"",
+            "docs": []
+        },
+        {
+            "query": "\"discov\" AND \"discuss\"",
+            "docs": []
+        },
+        {
+            "query": "(\"carlo\" AND \"não\") AND (\"suit\" OR \"toss\")",
+            "docs": []
+        },
+        {
+            "query": "\"secondari\"",
+            "docs": []
+        },
+        {
+            "query": "\"puent\"",
+            "docs": []
+        },
+        {
+            "query": "(\"divis\" AND \"ig\") AND (\"spend\" OR \"detal\")",
+            "docs": []
+        },
+        {
+            "query": "\"shall\" AND NOT \"name\"",
+            "docs": []
+        },
+        {
+            "query": "(\"construct\" AND NOT \"vida\") OR (\"architect\" AND NOT \"kid\")",
+            "docs": []
+        },
+        {
+            "query": "\"free\" AND \"annual\"",
+            "docs": []
+        },
+        {
+            "query": "(\"minut\" OR \"submit\") AND (\"anniversari\" OR \"done\")",
+            "docs": []
+        },
+        {
+            "query": "(\"nest\" AND \"inicia\") AND (\"saw\" OR \"oven\")",
+            "docs": []
+        },
+        {
+            "query": "\"as\" OR \"doe\"",
+            "docs": []
+        },
+        {
+            "query": "(\"nearli\" AND \"track\") OR \"açõ\"",
+            "docs": []
+        },
+        {
+            "query": "\"bargain\" AND \"catastroph\"",
+            "docs": []
+        },
+        {
+            "query": "\"unfair\" AND NOT \"red\"",
+            "docs": []
+        },
+        {
+            "query": "(\"taken\" AND \"cierta\") AND (\"damag\" OR \"latina\")",
+            "docs": []
+        },
+        {
+            "query": "\"chines\" AND NOT \"stori\"",
+            "docs": []
+        },
+        {
+            "query": "\"effici\" AND \"mix\"",
+            "docs": []
+        },
+        {
+            "query": "\"objetivo\" AND NOT \"four\"",
+            "docs": []
+        },
+        {
+            "query": "(\"farm\" OR \"indica\") AND NOT \"christian\"",
+            "docs": []
+        },
+        {
+            "query": "(\"never\" AND \"internet\") OR (\"intens\" AND \"escena\")",
+            "docs": []
+        },
+        {
+            "query": "\"huge\" AND NOT \"pay\"",
+            "docs": []
+        },
+        {
+            "query": "\"name\" AND \"modern\"",
+            "docs": []
+        },
+        {
+            "query": "(\"navig\" AND NOT \"video\") OR (\"museum\" AND NOT \"skin\")",
+            "docs": []
+        },
+        {
+            "query": "\"realizada\" AND NOT \"note\"",
+            "docs": []
+        },
+        {
+            "query": "\"canyon\"",
+            "docs": []
+        },
+        {
+            "query": "(\"casa\" AND \"harm\") OR \"bethléem\"",
+            "docs": []
+        },
+        {
+            "query": "(\"pm\" OR \"clinic\") AND (\"sex\" OR \"batteri\")",
+            "docs": []
+        },
+        {
+            "query": "(\"hotel\" AND \"influenc\") OR \"dealt\"",
+            "docs": []
+        },
+        {
+            "query": "\"sostien\"",
+            "docs": []
+        },
+        {
+            "query": "\"fault\"",
+            "docs": []
+        },
+        {
+            "query": "\"western\" OR \"knight\"",
+            "docs": []
+        },
+        {
+            "query": "\"alta\" AND NOT \"respons\"",
+            "docs": []
+        },
+        {
+            "query": "\"bishop\"",
+            "docs": []
+        },
+        {
+            "query": "(\"quit\" AND \"retraso\") AND (\"grant\" OR \"prévu\")",
+            "docs": []
+        },
+        {
+            "query": "(\"board\" AND \"litig\") AND (\"fit\" OR \"kenya\")",
+            "docs": []
+        },
+        {
+            "query": "(\"sourc\" AND \"finish\") OR (\"car\" AND \"oven\")",
+            "docs": []
+        },
+        {
+            "query": "(\"attorney\" OR \"aurora\") AND NOT \"found\"",
+            "docs": []
+        },
+        {
+            "query": "(\"ministri\" AND NOT \"que\") OR (\"belén\" AND NOT \"joe\")",
+            "docs": []
+        },
+        {
+            "query": "\"matur\" AND NOT \"run\"",
+            "docs": []
+        },
+        {
+            "query": "\"último\" AND NOT \"made\"",
+            "docs": []
+        },
+        {
+            "query": "\"trial\" OR \"fashion\"",
+            "docs": []
+        },
+        {
+            "query": "(\"pakistan\" AND \"particularli\") OR \"pero\"",
+            "docs": []
+        },
+        {
+            "query": "\"visitor\" AND \"p\"",
+            "docs": []
+        },
+        {
+            "query": "(\"suprem\" AND NOT \"updat\") OR (\"particularment\" AND NOT \"b\")",
+            "docs": []
+        },
+        {
+            "query": "\"sufrió\"",
+            "docs": []
+        },
+        {
+            "query": "\"rodrigo\"",
+            "docs": []
+        },
+        {
+            "query": "\"low\" OR \"experiência\"",
+            "docs": []
+        },
+        {
+            "query": "(\"result\" AND \"washington\") OR (\"saint\" AND \"capacidad\")",
+            "docs": []
+        },
+        {
+            "query": "\"distrito\" AND \"ncaa\"",
+            "docs": []
+        },
+        {
+            "query": "\"initial\"",
+            "docs": []
+        },
+        {
+            "query": "\"cierr\" AND NOT \"employ\"",
+            "docs": []
+        },
+        {
+            "query": "\"emot\"",
+            "docs": []
+        },
+        {
+            "query": "\"in\" AND \"domingo\"",
+            "docs": []
+        },
+        {
+            "query": "(\"finish\" AND \"gift\") OR \"humana\"",
+            "docs": []
+        },
+        {
+            "query": "\"crisi\" AND NOT \"según\"",
+            "docs": []
+        },
+        {
+            "query": "\"paper\" AND NOT \"media\"",
+            "docs": []
+        },
+        {
+            "query": "\"prevent\" AND NOT \"assist\"",
+            "docs": []
+        },
+        {
+            "query": "\"bill\" OR \"doj\"",
+            "docs": []
+        },
+        {
+            "query": "\"predict\" AND NOT \"industri\"",
+            "docs": []
+        }
+    ]
+}

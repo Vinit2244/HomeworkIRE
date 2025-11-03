@@ -453,6 +453,7 @@ def calc_memory_usage_query_execution(query_file_path: str, index_id: str, index
     t.start()
 
     # Execute each query
+    index.load_index(index_id)
     for query in queries:
         index.query(query["query"], index_id)
     
@@ -548,6 +549,7 @@ def calc_latency(query_file_path: str, index_id: str, index_type: str, dataset: 
 
     # Execute each query and measure latency
     latency = []
+    index.load_index(index_id)
     for query in tqdm(queries, desc="Calculating latency"):
         start_time = time.time()
         index.query(query["query"], index_id)
@@ -682,6 +684,7 @@ def calc_throughput(query_file_path: str, index_id: str, index_type: str, datase
 
         # Execute all queries and measure throughput
         start_time = time.time()
+        index.load_index(index_id)
         for query in tqdm(queries, desc="Calculating throughput"):
             index.query(query["query"], index_id)
         end_time = time.time()
@@ -789,7 +792,7 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
     for args in args_list:
         print(f"{Style.FG_CYAN}Calculating functional metrics for config: {get_label(label_fields, args)}{Style.RESET}")
         
-        # 1. Setup the index and load queries
+        # Setup the index and load queries
         # We only run this on CustomIndex, ESIndex is the ground truth
         if args.get("index_type") != "CustomIndex":
             print(f"{Style.FG_ORANGE}Skipping ESIndex, it is the ground truth.{Style.RESET}")
@@ -806,13 +809,15 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
         # Lists to store scores for averaging
         precision_scores, recall_scores, f1_scores, acc_scores, ap_scores, ndcg_scores = [], [], [], [], [], []
 
-        # 2. Loop through each query
+        index.load_index(args.get("index_id"))
+
+        # Loop through each query
         for query in queries:
             ground_truth_docs = query['docs'] # Ranked list
             relevant_set = set(ground_truth_docs)
             query_string = query['query']
 
-            # 3. Get retrieved docs from CustomIndex
+            # Get retrieved docs from CustomIndex
             try:
                 result_json_str = index.query(query_string, args.get("index_id"))
                 result_data = json.loads(result_json_str)
@@ -823,7 +828,7 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
                 print(f"{Style.FG_RED}Error querying index {args.get('index_id')} with query '{query_string}': {e}{Style.RESET}")
                 retrieved_docs = []
             
-            # 4. Calculate metrics for this query
+            # Calculate metrics for this query
             p_at_k = metrics.precision_at_k(retrieved_docs, relevant_set, max_results)
             r_at_k = metrics.recall_at_k(retrieved_docs, relevant_set, max_results)
             f1_at_k = metrics.f1_score(p_at_k, r_at_k)
@@ -832,7 +837,7 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
             ap = metrics.average_precision(retrieved_docs, relevant_set)
             ndcg_at_k = metrics.ndcg_at_k(retrieved_docs, relevant_set, max_results)
 
-            # 5. Append scores for averaging
+            # Append scores for averaging
             precision_scores.append(p_at_k)
             recall_scores.append(r_at_k)
             f1_scores.append(f1_at_k)
@@ -840,7 +845,7 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
             ap_scores.append(ap)
             ndcg_scores.append(ndcg_at_k)
 
-        # 6. Average scores for this configuration
+        # Average scores for this configuration
         config_summary = {
             "Config": get_label(label_fields, args),
             "Dataset": args.get("dataset"),
@@ -854,18 +859,18 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
         
         all_results_summary.append(config_summary)
         
-        # 7. Save detailed results to JSON
+        # Save detailed results to JSON
         output_file_name = f"metrics_{args.get('dataset')}_{args.get('info')}_{args.get('qproc')}_{args.get('optim')}.json"
         output_file_path = os.path.join(output_dir, output_file_name)
         with open(output_file_path, 'w') as f:
             json.dump(config_summary, f, indent=4)
         print(f"{Style.FG_GREEN}Metrics saved to '{output_file_path}'{Style.RESET}")
 
-        # 8. Clean up index
+        # Clean up index
         index.delete_index(args.get("index_id"))
         reset()
 
-    # 9. Print final summary table
+    # Print final summary table
     if not all_results_summary:
         print(f"{Style.FG_RED}No functional metrics were calculated.{Style.RESET}")
         return
@@ -893,81 +898,82 @@ def calc_functional_metrics(output_dir: str, args_list: List[Dict[str, Any]], la
         print(table)
         print("\n")
 
+
 # ========================= MAIN ==========================
 if __name__ == "__main__":
     # Create a temp folder to store intermediate outputs
     os.makedirs(TEMP_FOLDER_PATH, exist_ok=True)
 
-    # # ========================================================================
-    # # Memory footprint comparison for different IndexInfo configurations
-    # # ========================================================================
-    # diff_info_mem_args = [
-    #     # ES Index - News Dataset
-    #     # {"index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",      "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # ES Index - Wikipedia Dataset
-    #     {"index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",      "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     # Custom Index - News Dataset
-    #     # {"index_id": "cust_news_bool",  "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN",   "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # {"index_id": "cust_news_wc",    "index_type": "CustomIndex", "dataset": "News",      "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # {"index_id": "cust_news_tfidf", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF",     "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # Custom Index - Wikipedia Dataset
-    #     {"index_id": "cust_wiki_bool",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN",   "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     {"index_id": "cust_wiki_wc",    "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     {"index_id": "cust_wiki_tfidf", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF",     "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]}
-    # ]
-    # label_fields = ["index_type", "info"]
+    # ========================================================================
+    # Memory footprint comparison for different IndexInfo configurations
+    # ========================================================================
+    diff_info_mem_args = [
+        # ES Index - News Dataset
+        {"index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",      "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # ES Index - Wikipedia Dataset
+        {"index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",      "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        # Custom Index - News Dataset
+        {"index_id": "cust_news_bool",  "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN",   "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"index_id": "cust_news_wc",    "index_type": "CustomIndex", "dataset": "News",      "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"index_id": "cust_news_tfidf", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF",     "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # Custom Index - Wikipedia Dataset
+        {"index_id": "cust_wiki_bool",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN",   "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"index_id": "cust_wiki_wc",    "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"index_id": "cust_wiki_tfidf", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF",     "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]}
+    ]
+    label_fields = ["index_type", "info"]
 
-    # print(f"{Style.FG_MAGENTA}Calculating Memory Usage Comparison for Different Index Information Types...{Style.RESET}")
-    # for args in diff_info_mem_args:
-    #     print(f"{Style.FG_CYAN}Calculating memory usage for IndexType: {args.get("index_type")}, Dataset: {args.get("dataset")}, Info: {args.get("info")}...{Style.RESET}")
-    #     calc_memory_usage_index_creation(args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
+    print(f"{Style.FG_MAGENTA}Calculating Memory Usage Comparison for Different Index Information Types...{Style.RESET}")
+    for args in diff_info_mem_args:
+        print(f"{Style.FG_CYAN}Calculating memory usage for IndexType: {args.get("index_type")}, Dataset: {args.get("dataset")}, Info: {args.get("info")}...{Style.RESET}")
+        calc_memory_usage_index_creation(args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
 
-    #     # Store the memory usage data to a JSON file
-    #     temp_output_file_path: str = get_temp_file_path("memory_usage", args)
-    #     with open(temp_output_file_path, 'w') as f:
-    #         json.dump(memory_usage, f)
+        # Store the memory usage data to a JSON file
+        temp_output_file_path: str = get_temp_file_path("memory_usage", args)
+        with open(temp_output_file_path, 'w') as f:
+            json.dump(memory_usage, f)
 
-    # print(f"{Style.FG_MAGENTA}Plotting Memory Usage Comparison for Index: {args.get("index_type")}, Info: {args.get("info")}{Style.RESET}")
+    print(f"{Style.FG_MAGENTA}Plotting Memory Usage Comparison for Index: {args.get("index_type")}, Info: {args.get("info")}{Style.RESET}")
 
-    # output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_info_mem.png")
-    # plot_memory_usage_comparison(output_file_path, diff_info_mem_args, label_fields)
-    # reset()
+    output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_info_mem.png")
+    plot_memory_usage_comparison(output_file_path, diff_info_mem_args, label_fields)
+    reset()
 
 
-    # # ========================================================================
-    # # Latency comparison for different Data stores
-    # # ========================================================================
-    # diff_dstore_latency_args = [
-    #     # ES Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",    "dstore": "NONE",    "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # ES Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",    "dstore": "NONE",    "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     # Custom Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_cust",  "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM",  "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_rocks", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "ROCKSDB", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_redis", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "REDIS",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # Custom Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_cust",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM",  "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_rocks", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "ROCKSDB", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_redis", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "REDIS",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]}
-    # ]
-    # label_fields = ["index_type", "dstore"]
+    # ========================================================================
+    # Latency comparison for different Data stores
+    # ========================================================================
+    diff_dstore_latency_args = [
+        # ES Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",    "dstore": "NONE",    "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # ES Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",    "dstore": "NONE",    "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        # Custom Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_cust",  "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM",  "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_rocks", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "ROCKSDB", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_redis", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "REDIS",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # Custom Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_cust",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM",  "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_rocks", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "ROCKSDB", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_redis", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "REDIS",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]}
+    ]
+    label_fields = ["index_type", "dstore"]
 
-    # print(f"{Style.FG_MAGENTA}Calculating Latency of Queries Execution for Different Data Stores...{Style.RESET}")
-    # for args in diff_dstore_latency_args:
-    #     print(f"{Style.FG_CYAN}Calculating latency for Index: {args.get("index_type")}, DataStore: {args.get("dstore")}, Dataset: {args.get("dataset")}...{Style.RESET}")
-    #     latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
+    print(f"{Style.FG_MAGENTA}Calculating Latency of Queries Execution for Different Data Stores...{Style.RESET}")
+    for args in diff_dstore_latency_args:
+        print(f"{Style.FG_CYAN}Calculating latency for Index: {args.get("index_type")}, DataStore: {args.get("dstore")}, Dataset: {args.get("dataset")}...{Style.RESET}")
+        latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
         
-    #     # Store the latency data to a JSON file
-    #     temp_output_file_path: str = get_temp_file_path("latency", args)
-    #     with open(temp_output_file_path, 'w') as f:
-    #         json.dump({"latencies": latencies}, f)
+        # Store the latency data to a JSON file
+        temp_output_file_path: str = get_temp_file_path("latency", args)
+        with open(temp_output_file_path, 'w') as f:
+            json.dump({"latencies": latencies}, f)
 
-    # print(f"{Style.FG_MAGENTA}Plotting Latency Comparison for Different Data Stores...{Style.RESET}")
+    print(f"{Style.FG_MAGENTA}Plotting Latency Comparison for Different Data Stores...{Style.RESET}")
 
-    # output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_dstore_latency.png")
-    # plot_latency_comparison(output_file_path, diff_dstore_latency_args, PLOT_ES, label_fields)
-    # reset()
+    output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_dstore_latency.png")
+    plot_latency_comparison(output_file_path, diff_dstore_latency_args, PLOT_ES, label_fields)
+    reset()
 
 
     # ========================================================================
@@ -975,17 +981,17 @@ if __name__ == "__main__":
     # ========================================================================
     diff_compr_latency_throughput_args = [
         # ES Index - News Dataset
-        # {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",        "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",    "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",        "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",    "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
         # ES Index - Wikipedia Dataset
-        # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",        "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",    "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",        "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",    "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
         # Custom Index - News Dataset
-        # {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_none", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_none", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
         {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_code", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CODE", "optim": "NONE", "attributes": ["uuid", "text"]},
         {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_clib", "index_type": "CustomIndex", "dataset": "News",      "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CLIB", "optim": "NONE", "attributes": ["uuid", "text"]},
         # Custom Index - Wikipedia Dataset
-        # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_none", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-        # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_code", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CODE", "optim": "NONE", "attributes": ["id", "text"]},
-        # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_clib", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CLIB", "optim": "NONE", "attributes": ["id", "text"]}
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_none", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_code", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CODE", "optim": "NONE", "attributes": ["id", "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_clib", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "BOOLEAN", "dstore": "CUSTOM", "qproc": "NONE", "compr": "CLIB", "optim": "NONE", "attributes": ["id", "text"]}
     ]
     label_fields = ["index_type", "compr"]
 
@@ -1015,103 +1021,104 @@ if __name__ == "__main__":
     reset()
 
 
-    # # ========================================================================
-    # # Memory footprint & latency comparison for Taat/Daat query processing
-    # # ========================================================================
-    # diff_qproc_mem_latency_args = [
-    #     # ES Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",        "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # ES Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",        "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
-    #     # Custom Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_taat", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_daat", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     # Custom Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_taat", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["id",  "text"]},
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_daat", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "NONE", "attributes": ["id",  "text"]}
-    # ]
-    # label_fields = ["index_type", "qproc"]
+    # ========================================================================
+    # Memory footprint & latency comparison for Taat/Daat query processing
+    # ========================================================================
+    diff_qproc_mem_latency_args = [
+        # ES Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",        "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # ES Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",        "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE", "attributes": ["id", "text"]},
+        # Custom Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_taat", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_daat", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # Custom Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_taat", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["id",  "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_daat", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "NONE", "attributes": ["id",  "text"]}
+    ]
+    label_fields = ["index_type", "qproc"]
 
-    # print(f"{Style.FG_MAGENTA}Calculating Memory Usage and Latency of Queries Execution for Different Query Processing Techniques...{Style.RESET}")
-    # for args in diff_qproc_mem_latency_args:
-    #     print(f"{Style.FG_CYAN}Calculating memory usage and latency for Index: {args.get("index_type")}, Query Processing: {args.get("qproc")}, Dataset: {args.get("dataset")}...{Style.RESET}")
-    #     # Calculate Memory Usage
-    #     calc_memory_usage_query_execution(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
+    print(f"{Style.FG_MAGENTA}Calculating Memory Usage and Latency of Queries Execution for Different Query Processing Techniques...{Style.RESET}")
+    for args in diff_qproc_mem_latency_args:
+        print(f"{Style.FG_CYAN}Calculating memory usage and latency for Index: {args.get("index_type")}, Query Processing: {args.get("qproc")}, Dataset: {args.get("dataset")}...{Style.RESET}")
+        # Calculate Memory Usage
+        calc_memory_usage_query_execution(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
 
-    #     # Store the memory usage data to a JSON file
-    #     temp_memory_output_file_path: str = get_temp_file_path("memory_usage", args)
-    #     with open(temp_memory_output_file_path, 'w') as f:
-    #         json.dump(memory_usage, f)
+        # Store the memory usage data to a JSON file
+        temp_memory_output_file_path: str = get_temp_file_path("memory_usage", args)
+        with open(temp_memory_output_file_path, 'w') as f:
+            json.dump(memory_usage, f)
 
-    #     # Calculate Latency
-    #     latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
+        # Calculate Latency
+        latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
 
-    #     # Store the latency data to a JSON file
-    #     temp_latency_output_file_path: str = get_temp_file_path("latency", args)
-    #     with open(temp_latency_output_file_path, 'w') as f:
-    #         json.dump({"latencies": latencies}, f)
-    # print(f"{Style.FG_MAGENTA}Plotting Memory Usage and Latency Comparison for Different Query Processing Techniques...{Style.RESET}")
+        # Store the latency data to a JSON file
+        temp_latency_output_file_path: str = get_temp_file_path("latency", args)
+        with open(temp_latency_output_file_path, 'w') as f:
+            json.dump({"latencies": latencies}, f)
+    print(f"{Style.FG_MAGENTA}Plotting Memory Usage and Latency Comparison for Different Query Processing Techniques...{Style.RESET}")
     
-    # output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_qproc_mem.png")
-    # plot_memory_usage_comparison(output_file_path, diff_qproc_mem_latency_args, label_fields)
+    output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_qproc_mem.png")
+    plot_memory_usage_comparison(output_file_path, diff_qproc_mem_latency_args, label_fields)
     
-    # output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_qproc_latency.png")
-    # plot_latency_comparison(output_file_path, diff_qproc_mem_latency_args, PLOT_ES, label_fields)
-    # reset()
+    output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_qproc_latency.png")
+    plot_latency_comparison(output_file_path, diff_qproc_mem_latency_args, PLOT_ES, label_fields)
+    reset()
 
 
-    # # ========================================================================
-    # # Latency comparison for different optimizations
-    # # ========================================================================
-    # diff_optim_latency_args = [
-    #     # ES Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE",          "attributes": ["uuid", "text"]},
-    #     # ES Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE",         "attributes": ["id", "text"]},
-    #     # Custom Index - News Dataset
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_none",  "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE",          "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_optim", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "EARLYSTOPPING", "attributes": ["uuid", "text"]},
-    #     # Custom Index - Wikipedia Dataset
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_none",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE",          "attributes": ["id",  "text"]},
-    #     # {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_optim", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "EARLYSTOPPING", "attributes": ["id",  "text"]}
-    # ]
-    # label_fields = ["index_type", "optim"]
+    # ========================================================================
+    # Latency comparison for different optimizations
+    # ========================================================================
+    diff_optim_latency_args = [
+        # ES Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "es_news",         "index_type": "ESIndex",     "dataset": "News",      "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE",     "attributes": ["uuid", "text"]},
+        # ES Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "es_wiki",         "index_type": "ESIndex",     "dataset": "Wikipedia", "info": "NONE",  "dstore": "NONE",   "qproc": "NONE", "compr": "NONE", "optim": "NONE",    "attributes": ["id", "text"]},
+        # Custom Index - News Dataset
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_none",  "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE",      "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json",      "index_id": "cust_news_optim", "index_type": "CustomIndex", "dataset": "News",      "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "OPTIMISED", "attributes": ["uuid", "text"]},
+        # Custom Index - Wikipedia Dataset
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_none",  "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE",      "attributes": ["id",  "text"]},
+        {"query_file_path": "../../query_sets/wikipedia_queries.json", "index_id": "cust_wiki_optim", "index_type": "CustomIndex", "dataset": "Wikipedia", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC",  "compr": "NONE", "optim": "OPTIMISED", "attributes": ["id",  "text"]}
+    ]
+    label_fields = ["index_type", "optim"]
 
-    # print(f"{Style.FG_MAGENTA}Calculating Latency of Queries Execution for Different Optimization Techniques...{Style.RESET}")
-    # for args in diff_optim_latency_args:
-    #     print(f"{Style.FG_CYAN}Calculating latency for Index: {args.get("index_type")}, Optimization: {args.get("optim")}, Dataset: {args.get("dataset")}...{Style.RESET}")
-    #     latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
+    print(f"{Style.FG_MAGENTA}Calculating Latency of Queries Execution for Different Optimization Techniques...{Style.RESET}")
+    for args in diff_optim_latency_args:
+        print(f"{Style.FG_CYAN}Calculating latency for Index: {args.get("index_type")}, Optimization: {args.get("optim")}, Dataset: {args.get("dataset")}...{Style.RESET}")
+        latencies = calc_latency(args.get("query_file_path"), args.get("index_id"), args.get("index_type"), args.get("dataset"), args.get("info"), args.get("dstore"), args.get("qproc"), args.get("compr"), args.get("optim"), args.get("attributes"))
         
-    #     # Store the latency data to a JSON file
-    #     temp_output_file_path: str = get_temp_file_path("latency", args)
-    #     with open(temp_output_file_path, 'w') as f:
-    #         json.dump({"latencies": latencies}, f)
-    # print(f"{Style.FG_MAGENTA}Plotting Latency Comparison for Different Optimization Techniques...{Style.RESET}")
-    # output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_optim_latency.png")
-    # plot_latency_comparison(output_file_path, diff_optim_latency_args, PLOT_ES, label_fields)
-    # reset()
+        # Store the latency data to a JSON file
+        temp_output_file_path: str = get_temp_file_path("latency", args)
+        with open(temp_output_file_path, 'w') as f:
+            json.dump({"latencies": latencies}, f)
+    print(f"{Style.FG_MAGENTA}Plotting Latency Comparison for Different Optimization Techniques...{Style.RESET}")
+    output_file_path: str = os.path.join(OUTPUT_FOLDER_PATH, "diff_optim_latency.png")
+    plot_latency_comparison(output_file_path, diff_optim_latency_args, PLOT_ES, label_fields)
+    reset()
 
-    # # ========================================================================
-    # # Functional Metrics Comparison for different hyperparameters
-    # # ========================================================================
-    # diff_hyperparam_metrics_args = [
-    #     # News Dataset - TFIDF - TERM
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_taat_none", "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+
+    # ========================================================================
+    # Functional Metrics Comparison for different hyperparameters
+    # ========================================================================
+    diff_hyperparam_metrics_args = [
+        # News Dataset - TFIDF - TERM
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_taat_none", "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
         
-    #     # News Dataset - TFIDF - DOC
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_daat_none", "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_daat_es",   "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "EARLYSTOPPING", "attributes": ["uuid", "text"]},
+        # News Dataset - TFIDF - DOC
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_daat_none", "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_tfidf_daat_es",   "index_type": "CustomIndex", "dataset": "News", "info": "TFIDF", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "OPTIMISED", "attributes": ["uuid", "text"]},
 
-    #     # News Dataset - WORDCOUNT - TERM
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_taat_none", "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        # News Dataset - WORDCOUNT - TERM
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_taat_none", "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "TERM", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
 
-    #     # News Dataset - WORDCOUNT - DOC
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_daat_none", "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
-    #     {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_daat_es",   "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "EARLYSTOPPING", "attributes": ["uuid", "text"]},
-    # ]
-    # label_fields = ["info", "qproc", "optim"]
+        # News Dataset - WORDCOUNT - DOC
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_daat_none", "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "NONE", "attributes": ["uuid", "text"]},
+        {"query_file_path": "../../query_sets/news_queries.json", "index_id": "cust_news_wc_daat_es",   "index_type": "CustomIndex", "dataset": "News", "info": "WORDCOUNT", "dstore": "CUSTOM", "qproc": "DOC", "compr": "NONE", "optim": "OPTIMISED", "attributes": ["uuid", "text"]},
+    ]
+    label_fields = ["info", "qproc", "optim"]
 
-    # # Run the functional metrics calculation
-    # print(f"{Style.FG_MAGENTA}Calculating Functional Metrics for Different Hyperparameters...{Style.RESET}")
-    # calc_functional_metrics(OUTPUT_FOLDER_PATH, diff_hyperparam_metrics_args, label_fields)
-    # reset()
+    # Run the functional metrics calculation
+    print(f"{Style.FG_MAGENTA}Calculating Functional Metrics for Different Hyperparameters...{Style.RESET}")
+    calc_functional_metrics(OUTPUT_FOLDER_PATH, diff_hyperparam_metrics_args, label_fields)
+    reset()
