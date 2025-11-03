@@ -9,10 +9,9 @@ from typing import List, Dict, Any, Set
 from constants import (
     STORAGE_DIR, 
     MAX_RESULTS, 
-    RANKING_SCORE_THRESHOLD,
     DataStore, 
     StatusCode, 
-    Compression,
+    # Compression,
     IndexInfo,
     QueryProc,
     Optimizations
@@ -21,25 +20,71 @@ from constants import (
 
 # ================== QUERY PARSER ==================
 class QueryParser:
-    def __init__(self, query):
+    """
+    A simple recursive descent parser for boolean queries with support for AND, OR, NOT, PHRASE, and parentheses.
+    """
+
+    def __init__(self, query: str):
         self.tokens = self.tokenize(query)
         self.pos = 0
 
-    def tokenize(self, query):
+    def tokenize(self, query: str) -> List[str]:
+        """
+        About:
+        ------
+            Tokenizes the input query string into a list of tokens.
+
+        Args:
+        -----
+            query (str): The input query string.
+
+        Returns:
+        -------
+            List[str]: A list of tokens extracted from the query.
+        """
+
         # Splits by quotes and operators while keeping phrases
         token_pattern = r'"[^"]+"|\(|\)|AND|OR|NOT|PHRASE'
         tokens = re.findall(token_pattern, query)
         return [t.strip() for t in tokens if t.strip()]
 
-    def peek(self):
+    def peek(self) -> str | None:
+        """
+        About:
+        ------
+            Returns the current token without consuming it.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            str | None: The current token or None if at the end of the token list.
+        """
+        
         return self.tokens[self.pos] if self.pos < len(self.tokens) else None
 
-    def consume(self):
+    def consume(self) -> str:
+        """
+        About:
+        ------
+            Consumes and returns the current token, advancing the position.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            str: The consumed token.
+        """
+
         token = self.peek()
         self.pos += 1
         return token
 
-    def parse(self):
+    def parse(self) -> dict:
         return self.parse_or()
 
     # Lowest precedence
@@ -138,16 +183,16 @@ class QueryProcessingEngine:
             if not postings:
                 return []
             
-            pos_data = postings.get("positions", [])
-
-            if self.compr == Compression.CODE.name:
-                if not pos_data:
-                    return []
-                varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
-                gaps = self.encoder.varbyte_decode(varbyte_blob)
-                return self.encoder.gap_decode(gaps)
-            else:
-                return pos_data
+            # pos_data = postings.get("positions", [])
+            return postings.get("positions", [])
+            # if self.compr == Compression.CODE.name:
+            #     if not pos_data:
+            #         return []
+            #     varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
+            #     gaps = self.encoder.varbyte_decode(varbyte_blob)
+            #     return self.encoder.gap_decode(gaps)
+            # else:
+            #     return pos_data
         
         # Get all positions for the first word in this doc
         first_word_positions = get_positions(words[0], doc_id)
@@ -231,7 +276,7 @@ class QueryProcessingEngine:
             print(f"{Style.FG_RED}Error: Ranking requested but index type '{index_info_type}' is not compatible for ranking. Returning unranked results.{Style.RESET}")
             return None
 
-    def _rank_documents_taat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str, optim: str) -> List[Dict[str, Any]]:
+    def _rank_documents_taat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str) -> List[Dict[str, Any]]:
         score_key = self._get_score_key(index_info_type)
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
@@ -254,13 +299,7 @@ class QueryProcessingEngine:
         for doc_id in doc_ids_to_rank:
             if doc_id not in scores:
                 scores[doc_id] = 0.0
-
-        if optim == Optimizations.THRESHOLDING.name:
-            scores = {
-                doc_id: score for doc_id, score in scores.items() 
-                if score >= RANKING_SCORE_THRESHOLD
-            }
-                
+        
         ranked_list = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         
         return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
@@ -270,47 +309,74 @@ class QueryProcessingEngine:
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
 
-        # Cache postings for all terms first
+        # Prepare posting lists and precompute max term scores
         term_postings = {}
+        max_term_scores = {}
         for term in scoring_terms:
             term = term.lower()
-            term_postings[term] = index.get(term, {})
-        
-        use_threshold = optim == Optimizations.THRESHOLDING.name
-        use_early_stop = optim == Optimizations.EARLYSTOPPING.name
-
-        scores_heap = []
-        scores_dict = {} 
-
-        # DAAT: Iterate through each document that passed the filter
-        for doc_id in doc_ids_to_rank:
-            total_score = 0.0
-            for term, postings in term_postings.items():
-                doc_data = postings.get(doc_id)
-                if doc_data:
-                    total_score += doc_data.get(score_key, 0.0)
+            postings = index.get(term, {})
+            if not postings:
+                continue
             
-            if use_threshold and total_score < RANKING_SCORE_THRESHOLD:
-                continue # Skip this document entirely
+            # Convert postings dict -> list of {doc_id, score} sorted by doc_id
+            posting_list = [{"doc_id": doc_id, "score": data.get(score_key, 0.0)} for doc_id, data in postings.items()]
+            posting_list.sort(key=lambda x: x["doc_id"])  # ensures sorted order only once if needed
+            term_postings[term] = posting_list
+            max_term_scores[term] = max(p["score"] for p in posting_list)
 
-            if use_early_stop:
-                if len(scores_heap) < MAX_RESULTS:
-                    heapq.heappush(scores_heap, (total_score, doc_id))
-                elif total_score > scores_heap[0][0]: # If score is better than the worst in heap
-                    # Replace the smallest item with the new item
-                    heapq.heapreplace(scores_heap, (total_score, doc_id))
-            else:
-                scores_dict[doc_id] = total_score
-        
-        if use_early_stop:
-            # Heap contains the top-k, but they are a min-heap
-            # Sort them descending by score
-            ranked_list = sorted(scores_heap, key=lambda item: item[0], reverse=True)
-            return [{"id": doc_id, "score": score} for score, doc_id in ranked_list]
-        else:
-            # Sort the regular dictionary
-            ranked_list = sorted(scores_dict.items(), key=lambda item: item[1], reverse=True)
-            return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
+        # If no valid terms, nothing to rank
+        if not term_postings:
+            return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
+
+        # Early stopping variables
+        use_early_stop = (optim == Optimizations.EARLYSTOPPING.name)
+        top_k = MAX_RESULTS if use_early_stop else len(doc_ids_to_rank)
+        heap = []  # min-heap for top-k
+        threshold = 0.0  # min score in heap
+
+        # Initialize posting pointers
+        pointers = {term: 0 for term in term_postings}
+
+        # Iterate over candidate docs (already sorted externally)
+        for doc_id in doc_ids_to_rank:
+            actual_score = 0.0
+            terms_found = set()
+
+            # Process each term’s postings up to current doc
+            for term, plist in term_postings.items():
+                ptr = pointers[term]
+
+                # advance pointer if needed (posting lists are sorted)
+                while ptr < len(plist) and plist[ptr]["doc_id"] < doc_id:
+                    ptr += 1
+                    pointers[term] = ptr
+
+                if ptr < len(plist) and plist[ptr]["doc_id"] == doc_id:
+                    actual_score += plist[ptr]["score"]
+                    terms_found.add(term)
+
+            # Compute upper bound (actual + max possible of unseen terms)
+            upper_bound = actual_score + sum(
+                max_term_scores[t] for t in term_postings if t not in terms_found
+            )
+
+            # Early termination condition
+            if use_early_stop and len(heap) >= top_k and upper_bound <= threshold:
+                continue
+
+            final_score = actual_score
+
+            # Push into heap
+            if len(heap) < top_k:
+                heapq.heappush(heap, (final_score, doc_id))
+                threshold = heap[0][0]
+            elif final_score > threshold:
+                heapq.heapreplace(heap, (final_score, doc_id))
+                threshold = heap[0][0]
+
+        # Sort heap descending by score
+        ranked = sorted(heap, key=lambda x: x[0], reverse=True)
+        return [{"id": doc_id, "score": score} for score, doc_id in ranked]
 
     def _build_es_query(self, node, search_fields: list) -> dict:
             if not node:
@@ -399,9 +465,9 @@ class QueryProcessingEngine:
         ranked_docs = []
         
         # =========== MODIFICATION START ===========
-        if self.qproc == QueryProc.TAAT.name:
+        if self.qproc == QueryProc.TERM.name:
             ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
-        elif self.qproc == QueryProc.DAAT.name:
+        elif self.qproc == QueryProc.DOC.name:
             ranked_docs = self._rank_documents_daat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
         else:
             ranked_docs = [{"id": doc_id, "score": 0.0} for doc_id in matching_doc_ids_set]
@@ -451,7 +517,7 @@ class QueryProcessingEngine:
         # Return the original set of all matched IDs, and the formatted/ranked/limited hits
         return matching_doc_ids_set, hits
     
-    def process_es_query(self, es_client, index_id: str, query: str, search_fields: list, max_results: int, source: bool=True):
+    def process_es_query(self, es_client, index_id: str, query: str, search_fields: list, source: bool=True):
         if not search_fields:
             print(f"{Style.FG_RED}Error: No search_fields provided.{Style.RESET}")
             return StatusCode.QUERY_FAILED
@@ -471,7 +537,6 @@ class QueryProcessingEngine:
             res = es_client.search(
                 index=index_id, 
                 query=es_query, 
-                size=max_results,
                 _source=source
             )
 

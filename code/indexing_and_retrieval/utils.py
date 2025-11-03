@@ -9,6 +9,10 @@ CONFIG_FILE_PATH: str = "../../config.yaml" # Relative to this file
 
 # ======================== CLASSES ========================
 class Style:
+    """
+    ANSI escape sequences for styling terminal text.
+    """
+
     RESET     : str = "\033[0m"
     BOLD      : str = "\033[01m"
     UNDERLINE : str = "\033[4m"
@@ -37,7 +41,17 @@ class Style:
 # =================== UTILITY FUNCTIONS ===================
 def load_config() -> dict:
     '''
-    Returns the configuration from config.yaml file as a dictionary.
+    About:
+    ------
+        Loads the configuration from the config.yaml file.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        config (dict): Configuration dictionary.
     '''
     with open(CONFIG_FILE_PATH, 'r') as f:
         config = yaml.safe_load(f)
@@ -46,7 +60,17 @@ def load_config() -> dict:
 
 def get_word_freq_dist(text: str) -> dict:
     '''
-    Returns the frequency distribution of words in the given string. (Omits punctuations and is case insensitive)
+    About:
+    ------
+        Computes the word frequency distribution for the given text.
+
+    Args:
+    -----
+        text (str): Input text.
+
+    Returns:
+    --------
+        freq (dict): Dictionary with words as keys and their frequencies as values.
     '''
     freq: dict = defaultdict(int)
 
@@ -59,13 +83,33 @@ def get_word_freq_dist(text: str) -> dict:
 
 def clear_screen():
     '''
-    Clears the terminal screen.
+    About:
+    ------
+        Clears the terminal screen.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        None
     '''
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def wait_for_enter():
     '''
-    Waits for the user to press Enter.
+    About:
+    ------
+        Pauses execution and waits for the user to press Enter.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        None
     '''
     input(f"\n{Style.FG_BLUE}Press Enter to continue...{Style.RESET}")

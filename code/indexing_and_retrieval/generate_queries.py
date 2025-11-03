@@ -1,11 +1,10 @@
 # ======================== IMPORTS ========================
-import os
 import json
 import random
 import argparse
 from utils import Style
 from typing import List, Dict
-from constants import INDEX_SETTINGS
+from constants import INDEX_SETTINGS, MAX_NUM_DOCUMENTS
 from dataset_managers.dataset_news import get_news_dataset_handler
 from dataset_managers.dataset_wikipedia import get_wikipedia_dataset_handler
 
@@ -43,12 +42,26 @@ QUERY_TEMPLATES = [
 
 # ======================= FUNCTIONS =======================
 def get_dataset_handler():
+    """
+    About:
+    ------
+        Retrieves the appropriate dataset handler based on the configuration settings.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        An instance of the dataset handler (NewsDataset or WikipediaDataset).
+    """
+
     dataset_name = INDEX_SETTINGS.get("dataset", "News")
 
     print(f"{Style.FG_CYAN}Loading dataset handler for: {dataset_name}{Style.RESET}")
 
     if dataset_name == "News":
-        return get_news_dataset_handler(verbose=False)
+        return get_news_dataset_handler(MAX_NUM_DOCUMENTS, verbose=False)
     elif dataset_name == "Wikipedia":
         return get_wikipedia_dataset_handler(verbose=False)
     else:
@@ -57,6 +70,20 @@ def get_dataset_handler():
 
 
 def get_word_pools(freq_dict: Dict[str, int]) -> Dict[str, List[str]]:
+    """
+    About:
+    ------
+        Creates word pools (high, mid, low frequency) based on the provided frequency dictionary.
+
+    Args:
+    -----
+        freq_dict (Dict[str, int]): A dictionary mapping words to their frequencies.
+
+    Returns:
+    --------
+        A dictionary with keys 'high', 'mid', 'low' mapping to lists of words in each frequency pool.
+    """
+
     print("Sorting words by frequency...")
     # Sort by frequency (high to low) and filter out very rare words
     sorted_words = [
@@ -97,6 +124,20 @@ def get_word_pools(freq_dict: Dict[str, int]) -> Dict[str, List[str]]:
 
 
 def generate_query(pools: Dict[str, List[str]], templates: List[str]) -> str:
+    """
+    About:
+    ------
+        Generates a single boolean query string by filling in a random template with words from the provided pools.
+
+    Args:
+    -----
+        pools (Dict[str, List[str]]): A dictionary with keys 'high', 'mid', 'low' mapping to lists of words in each frequency pool.
+        templates (List[str]): A list of query templates containing placeholders.
+
+    Returns:
+    --------
+        A string representing the generated boolean query.
+    """
     
     def get_term(pool_name: str) -> str:
         """Helper to get a random, quoted term from a pool."""
@@ -119,6 +160,19 @@ def generate_query(pools: Dict[str, List[str]], templates: List[str]) -> str:
 
 # ========================= MAIN =========================
 def main():
+    """
+    About:
+    -----
+        Main function to generate diverse boolean queries and save them to a JSON file.
+    
+    Args:
+    -----
+        None
+    
+    Returns:
+    --------
+        None
+    """
     parser = argparse.ArgumentParser(description="Generate diverse boolean queries for an information retrieval system.")
     parser.add_argument(
         '-n', '--num_queries', 

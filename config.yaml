@@ -44,7 +44,7 @@ index:
 
 search_fields: [text]        # The field in the indexed documents to be searched (all fields to be searched must also be present in the 'attributes' list under 'index' section)
 max_results: 50              # The number of top document IDs to retrieve for each query
-max_num_documents: 5000      # Maximum number of documents to be processed from each dataset. Set to null to process all documents
+max_num_documents: 15000      # Maximum number of documents to be processed from each dataset. Set to null to process all documents
 top_k_words_threshold: 50    # Top K words to be plotted in frequency distribution plots
 ranking_score_threshold: 0.1 # Minimum score threshold for a document to be considered relevant
 output_folder_path: /Users/vinitmehta/Desktop/IIITH/Sem7/IRE/Assignments/HomeworkIRE/output

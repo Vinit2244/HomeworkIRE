@@ -124,6 +124,9 @@ python3 generate_queries.py --num_queries <N_QUERIES> --index_id <INDEX_ID> --ou
 
 # Generate the query outputs from elasticsearch to compare against custom index
 python3 setup_queries.py --path <PATH_TO_QUERIES_JSON>
+
+# Performance Testing
+python3 performance_metrics.py
 ```
 
 ## About Datasets

@@ -38,6 +38,10 @@ METADATA: dict = load_metadata()
 
 # ======================== CLASSES ========================
 class CustomIndex(BaseIndex):
+    """
+    Custom Index class supporting various configurations for indexing and data storage.
+    """
+
     def __init__(self, core: str, info: str="BOOLEAN", dstore: str="CUSTOM", qproc: str="NONE", compr: str="NONE", optim: str="NONE"):
         super().__init__(core, info, dstore, qproc, compr, optim)
         self.core = core
@@ -72,6 +76,20 @@ class CustomIndex(BaseIndex):
 
     # Private Methods
     def _add_ext_to_index_id(self, index_id: str) -> str | StatusCode:
+        """
+        About:
+        ------
+            Adds the appropriate extension to the index_id based on existing indices.
+
+        Args:
+        -----
+            index_id: The base index identifier.
+
+        Returns:
+        --------
+            The full index identifier with extension, or StatusCode.INDEX_NOT_FOUND if not found.
+        """
+
         if "." in index_id:
             return index_id
         
@@ -82,10 +100,39 @@ class CustomIndex(BaseIndex):
         return StatusCode.INDEX_NOT_FOUND
 
     def _check_index_exists(self, index_id: str) -> bool:
+        """
+        About:
+        ------
+            Checks if an index with the given index_id exists.
+
+        Args:
+        -----
+            index_id: The full index identifier.
+
+        Returns:
+        --------
+            True if the index exists, False otherwise.
+        """
+
         all_indices: list = METADATA.get("indices", [])
         return index_id in all_indices
 
     def _get_document(self, index_id_full: str, doc_id: str) -> dict | None:
+        """
+        About:
+        ------
+            Retrieves a document's content from the data store based on the index and document ID.
+
+        Args:
+        -----
+            index_id_full: The full index identifier.
+            doc_id: The unique identifier of the document.
+
+        Returns:
+        --------
+            The document content as a dictionary, or None if not found.
+        """
+
         index_data_path: str = os.path.join(STORAGE_DIR, index_id_full)
         doc_source = None
         try:
@@ -126,6 +173,22 @@ class CustomIndex(BaseIndex):
             return None
 
     def _build_inverted_index(self, files: Iterable[tuple[str, dict]], index_data_path: str, index_id: str) -> dict:
+        """
+        About:
+        ------
+            Builds the inverted index from the provided files and stores documents in the data store.
+
+        Args:
+        -----
+            files: An iterable of tuples, where each tuple contains the file id and its content.
+            index_data_path: The path where index data is stored.
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            A dictionary representing the inverted index.
+        """
+
         # Create place for storing documents if using custom data store
         if self.dstore == DataStore.CUSTOM.name:
             os.mkdir(os.path.join(index_data_path, "documents")) # Folder for storing all the documents
@@ -186,11 +249,24 @@ class CustomIndex(BaseIndex):
                     tfidf = tf * idf
                     inverted_index[word][doc_id]["tfidf"] = tfidf
 
-        # TODO: Implement optimisations
-
         return inverted_index, file_count
 
     def _update_index_metadata(self, index_id: str, items: dict) -> dict | StatusCode:
+        """
+        About:
+        ------
+            Updates the metadata of the specified index with the provided items.
+        
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+            items: A dictionary of metadata items to update.
+
+        Returns:
+        --------
+            None
+        """
+
         index_id = self._add_ext_to_index_id(index_id)
         if index_id == StatusCode.INDEX_NOT_FOUND:
             return StatusCode.INDEX_NOT_FOUND
@@ -234,6 +310,21 @@ class CustomIndex(BaseIndex):
                 return StatusCode.ERROR_ACCESSING_INDEX
     
     def _update_global_metadata(self, action: str, index_id: str) -> None:
+        """
+        About:
+        ------
+            Updates the global metadata file to add or remove an index entry.
+
+        Args:
+        -----
+            action: "add" to add the index, "remove" to remove the index.
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            None
+        """
+
         index_id = self._add_ext_to_index_id(index_id)
         all_indices: list = METADATA.get("indices", [])
         
@@ -247,6 +338,20 @@ class CustomIndex(BaseIndex):
             yaml.dump(METADATA, f, default_flow_style=False)
 
     def _compress(self, inverted_index: dict) -> bytes:
+        """
+        About:
+        ------
+            Compresses the inverted index based on the selected compression method.
+        
+        Args:
+        -----
+            inverted_index: The inverted index dictionary to compress.
+        
+        Returns:
+        --------
+            Compressed inverted index as bytes.
+        """
+
         # CODE Compression
         if self.compr == Compression.CODE.name:
             for term in inverted_index:
@@ -269,15 +374,59 @@ class CustomIndex(BaseIndex):
         return data_bytes
 
     def _decompress(self, compr: str, data_bytes: bytes) -> dict:
+        """
+        About:
+        ------
+            Decompresses the inverted index data based on the specified compression method.
+
+        Args:
+        -----
+            compr: The compression method used ("NONE", "CLIB", "CODE").
+            data_bytes: The compressed inverted index data as bytes.
+
+        Returns:
+        --------
+            The decompressed inverted index as a dictionary.
+        """
+
         if compr == Compression.CLIB.name:
             data_bytes = zlib.decompress(data_bytes)
 
-        # Deserialize from JSON
-        # For CODE decompression, we will handle it during query time as needed
-        return json.loads(data_bytes.decode('utf-8'))
+        # Deserialize from JSON and CODE decompress
+        if self.compr == Compression.CODE.name:
+            data_dict = json.loads(data_bytes.decode('utf-8'))
+            for term in data_dict:
+                for doc_id in data_dict[term]:
+                    pos_data = data_dict[term][doc_id]["positions"]
+
+                    if not pos_data:
+                        data_dict[term][doc_id]["positions"] = []
+                        continue
+                    varbyte_blob = bytes.fromhex(pos_data) # Convert hex string back to bytes
+                    gaps = self.encoder.varbyte_decode(varbyte_blob)
+                    positions = self.encoder.gap_decode(gaps)
+                    data_dict[term][doc_id]["positions"] = positions
+            return data_dict
+        
+        else:
+            return json.loads(data_bytes.decode('utf-8'))
         
     # Public Methods
     def get_index_info(self, index_id: str) -> dict | StatusCode:
+        """
+        About:
+        ------
+            Retrieves metadata information about the specified index.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            A dictionary containing index metadata, or StatusCode.ERROR_ACCESSING_INDEX on failure.
+        """
+
         index_id_full = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id_full):
             return StatusCode.INDEX_NOT_FOUND
@@ -318,11 +467,40 @@ class CustomIndex(BaseIndex):
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def list_indices(self) -> Iterable[str]:
+        """
+        About:
+        ------
+            Lists all existing indices in the system.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        --------
+            An iterable of dictionaries, each containing an index identifier.
+        """
+
         all_indices: list = METADATA.get("indices", [])
         all_indices: list = [{"index": index_id} for index_id in all_indices] # Return list of dicts for consistency with ESIndex
         return all_indices
 
     def create_index(self, index_id: str, files: Iterable[tuple[str, dict]]) -> StatusCode:
+        """
+        About:
+        ------
+            Creates an index for the given files.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+            files: An iterable of tuples, where each tuple contains the file id and its content.
+
+        Returns:
+        --------
+            StatusCode indicating success or failure.
+        """
+
         index_id = f"{index_id}.{self.name_ext}"
         if self._check_index_exists(index_id):
             return StatusCode.INDEX_ALREADY_EXISTS
@@ -380,10 +558,25 @@ class CustomIndex(BaseIndex):
 
         except Exception as e:
             print(f"Error creating index: {e}")
-            # TODO: Add cleanup logic here if creation fails
+            if os.path.exists(index_data_path):
+                shutil.rmtree(index_data_path)
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def load_index(self, index_id: str) -> StatusCode:
+        """
+        About:
+        ------
+            Loads the specified index into memory for querying.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            StatusCode indicating success or failure.
+        """
+
         index_id_full = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id_full):
             return StatusCode.INDEX_NOT_FOUND
@@ -459,6 +652,22 @@ class CustomIndex(BaseIndex):
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def update_index(self, index_id: str, remove_files: Iterable[str], add_files: Iterable[tuple[str, dict]]) -> StatusCode:
+        """
+        About:
+        ------
+            Updates the specified index by removing and adding files.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+            remove_files: An iterable of file IDs to remove from the index.
+            add_files: An iterable of tuples, where each tuple contains the file id and its content
+
+        Returns:
+        --------
+            StatusCode indicating success or failure.
+        """
+
         # Find the full index ID
         index_id_full = self._add_ext_to_index_id(index_id)
         if index_id_full == StatusCode.INDEX_NOT_FOUND:
@@ -541,13 +750,29 @@ class CustomIndex(BaseIndex):
         return create_status
 
     def query(self, query: str, index_id: str=None) -> str | StatusCode:
+        """
+        About:
+        ------
+            Executes a query against the specified index.
+
+        Args:
+        -----
+            query: The query string to execute.
+            index_id: The unique identifier for the index. If None, uses the core index.
+
+        Returns:
+        --------
+            A JSON string with the query results formatted like Elasticsearch, or StatusCode on failure.
+        """
+
         index_id = self._add_ext_to_index_id(index_id)
         if index_id == StatusCode.INDEX_NOT_FOUND:
             return StatusCode.INDEX_NOT_FOUND
 
+        self.load_index(index_id)
         if not self.loaded_index:
             return StatusCode.ERROR_ACCESSING_INDEX
-        
+
         engine = QueryProcessingEngine(self.compr, self.qproc)
 
         # Get all document IDs (for NOT operations)
@@ -556,10 +781,9 @@ class CustomIndex(BaseIndex):
             return all_doc_ids
 
         matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore, self.doc_store_handle, self.redis_client, self.info, self.optim)
-
         if isinstance(matching_doc_ids, StatusCode):
             return matching_doc_ids # Query failed
-        
+
         # Format output to mimic Elasticsearch
         es_like_output = {
             "hits": {
@@ -567,10 +791,24 @@ class CustomIndex(BaseIndex):
                 "hits": hits
             }
         }
-        
+
         return json.dumps(es_like_output, indent=2)
 
     def delete_index(self, index_id: str) -> StatusCode:
+        """
+        About:
+        ------
+            Deletes the specified index and all its associated data.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            StatusCode indicating success or failure.
+        """
+
         index_id = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id):
             return StatusCode.INDEX_NOT_FOUND
@@ -615,6 +853,20 @@ class CustomIndex(BaseIndex):
             return StatusCode.ERROR_ACCESSING_INDEX
 
     def list_indexed_files(self, index_id: str) -> Iterable[str]:
+        """
+        About:
+        ------
+            Lists all file IDs indexed in the specified index.
+
+        Args:
+        -----
+            index_id: The unique identifier for the index.
+
+        Returns:
+        --------
+            An iterable of file IDs, or StatusCode.INDEX_NOT_FOUND if the index does not exist.
+        """
+
         index_id = self._add_ext_to_index_id(index_id)
         if not self._check_index_exists(index_id):
             return StatusCode.INDEX_NOT_FOUND

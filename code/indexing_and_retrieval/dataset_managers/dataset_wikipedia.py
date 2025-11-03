@@ -11,6 +11,11 @@ from utils import Style, load_config
 
 # ======================== CLASSES ========================
 class WikipediaDataset(Dataset):
+    """
+    Wikipedia Dataset Handler.
+    Manages downloading, word frequency calculation, and preprocessing of the Wikipedia dataset stored in Parquet
+    """
+
     def __init__(self, data_path: str, max_num_docs: int) -> None:
         self.data_path = data_path
         self.max_num_docs = max_num_docs
@@ -24,10 +29,39 @@ class WikipediaDataset(Dataset):
 
     # Public functions
     def download_dataset(self) -> None:
+        """
+        About:
+        ------
+            Downloads the Wikipedia dataset to the specified path.
+            NOTE: Due to the large size of the dataset, automatic downloading is not implemented.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        --------
+            None
+        """
+
         os.makedirs(self.data_path, exist_ok=True)
         print(f"{Style.FG_RED + Style.BG_YELLOW + Style.BOLD}Manually download .parquet files of wikipedia dataset from https://huggingface.co/datasets/wikimedia/wikipedia/tree/main and save the files at {self.data_path}{Style.RESET}")
 
     def get_attributes(self) -> List[str]:
+        """
+        About:
+        ------
+            Retrieves the list of attributes (columns) present in the Parquet files of the dataset.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        --------
+            A list of attribute names (columns) present in the dataset.
+        """
+        
         # Get attributes from the first parquet file in the dataset
         if not self.wikipedia_parquet_files:
             return []
@@ -37,6 +71,20 @@ class WikipediaDataset(Dataset):
         return list(df.columns)
 
     def calculate_word_frequency(self) -> dict:
+        """
+        About:
+        ------
+            Calculates the overall word frequency distribution across all Parquet files in the dataset.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        --------
+            A dictionary with words as keys and their corresponding frequencies as values.
+        """
+        
         freq: dict = defaultdict(int)
 
         curr_row_count = 0
@@ -59,6 +107,30 @@ class WikipediaDataset(Dataset):
         return freq
 
     def preprocess(self, lowercase: bool, rem_stop: bool, stopword_langs: List[str], rem_punc: bool, rem_num: bool, rem_special: bool, stem: bool, stemming_algo: str, lemmatize: bool, lemmatization_algo: str) -> None:
+        """
+        About:
+        ------
+            Preprocesses the text data in each Parquet file according to the specified parameters.
+            Modifies the "text" field in each Parquet file in place.
+
+        Args:
+        -----
+            lowercase (bool): Whether to convert text to lowercase.
+            rem_stop (bool): Whether to remove stopwords.
+            stopword_langs (List[str]): List of languages for stopword removal. Can include "auto".
+            rem_punc (bool): Whether to remove punctuation.
+            rem_num (bool): Whether to remove numbers.
+            rem_special (bool): Whether to remove special characters.
+            stem (bool): Whether to apply stemming.
+            stemming_algo (str): The stemming algorithm to use.
+            lemmatize (bool): Whether to apply lemmatization.
+            lemmatization_algo (str): The lemmatization algorithm to use.
+
+        Returns:
+        --------
+            A dictionary with words as keys and their corresponding frequencies as values.
+        """
+        
         from preprocessing import Preprocessor
         
         freq: dict = defaultdict(int)
@@ -107,6 +179,21 @@ class WikipediaDataset(Dataset):
         return freq
 
     def get_files(self, attributes: List[str]) -> List[tuple[str, dict]]:
+        """
+        About:
+        ------
+            Generator that yields tuples of (unique identifier, payload dictionary) for each Parquet file in the dataset.
+            The unique identifier is taken from the first attribute in the provided list, and the payload dictionary contains the remaining attributes.
+        
+        Args:
+        -----
+            attributes (List[str]): List of attribute names to extract from each Parquet file. The first attribute is treated as the unique identifier.
+        
+        Yields:
+        --------
+            Yields tuples of (unique identifier, payload dictionary) for each Parquet file in the dataset.
+        """
+        
         files: List[tuple[str, dict]] = []
 
         curr_row_count = 0
@@ -132,11 +219,25 @@ class WikipediaDataset(Dataset):
 
 
 # ================== HELPER FUNCTIONS ====================
-def get_wikipedia_dataset_handler(verbose: bool=True) -> WikipediaDataset:
+def get_wikipedia_dataset_handler(max_num_docs: int, verbose: bool=True) -> WikipediaDataset:
+    """
+    About:
+    ------
+        Helper function to create and return a WikipediaDataset handler using configuration settings.
+
+    Args:
+    -----
+        max_num_docs (int): Maximum number of documents to handle. Use -1 for all documents.
+        verbose (bool): Whether to print status messages.
+
+    Returns:
+    --------
+        WikipediaDataset: An instance of the WikipediaDataset handler.
+    """
+    
     config = load_config()
     
     data_path: str = config["data"]["wikipedia"]["path"]
-    max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
     if verbose:
         print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}.{Style.RESET}\nTo change, modify config.yaml file.\n")
     

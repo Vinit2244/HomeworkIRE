@@ -7,6 +7,20 @@ from dataset_managers import NewsDataset, WikipediaDataset
 
 # ======================= FUNCTIONS =======================
 def preprocess_data(config: dict) -> None:
+    """
+    About:
+    ------
+        Preprocesses the datasets (News and Wikipedia) based on the settings provided in the configuration.
+
+    Args:
+    -----
+        config (dict): Configuration dictionary containing preprocessing settings.
+
+    Returns:
+    --------
+        None
+    """
+
     # Lower
     lowercase         : bool             = PREPROCESSING_SETTINGS["lowercase"]
     # Remove

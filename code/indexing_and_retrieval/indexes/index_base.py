@@ -9,12 +9,14 @@ class BaseIndex(ABC):
     """
     Base index class with abstract methods to inherit for specific implementations.
     """
+
     def __init__(self: str, core: str, info: str, dstore: str, qproc: str, compr: str, optim: str) -> None:
         """
         Sample usage:
             idx = IndexBase(core='ESIndex', info='BOOLEAN', dstore='CUSTOM', compr='NONE', qproc='TERM', optim='NONE)
             print (idx)
         """
+
         assert core in ('ESIndex', 'CustomIndex')
         long = [IndexInfo[info], DataStore[dstore], Compression[compr], QueryProc[qproc], Optimizations[optim]]
         short = [k.value for k in long]
@@ -22,6 +24,20 @@ class BaseIndex(ABC):
         self.identifier_short = "{}_i{}d{}c{}q{}o{}".format(*[core]+short)
 
     def __repr__(self):
+        """
+        About:
+        ------
+            String representation of the index instance.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        --------
+            A string representing the index instance with its short and long identifiers.
+        """
+        
         return f"{self.identifier_short}: {self.identifier_long}"
 
     @abstractmethod

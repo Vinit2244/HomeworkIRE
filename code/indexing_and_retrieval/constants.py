@@ -42,6 +42,9 @@ API_KEY  = os.getenv("API_KEY")
 
 # ========================= ENUMS =========================
 class IndexInfo(Enum):
+    """
+    Enumeration for different index information types.
+    """
     NONE     : int = 0 # Just a placeholder
     BOOLEAN  : int = 1
     WORDCOUNT: int = 2
@@ -49,6 +52,9 @@ class IndexInfo(Enum):
 
 
 class DataStore(Enum):
+    """
+    Enumeration for different data storage types.
+    """
     NONE   : int = 0 # Just a placeholder
     CUSTOM : int = 1
     ROCKSDB: int = 2
@@ -56,24 +62,34 @@ class DataStore(Enum):
 
 
 class Compression(Enum):
+    """
+    Enumeration for different compression types."""
     NONE: int = 0
     CODE: int = 1
     CLIB: int = 2
 
 
 class Optimizations(Enum):
+    """
+    Enumeration for different optimization techniques."""
     NONE         : str = '0'
     THRESHOLDING : str = 'th'
     EARLYSTOPPING: str = 'es'
 
 
 class QueryProc(Enum):
+    """
+    Enumeration for different query processing techniques.
+    """
     NONE: str = '0' # Just a placeholder
     TERM: str = 'T'
     DOC : str = 'D'
 
 
 class StatusCode(Enum):
+    """
+    Enumeration for different status codes used in the indexing and retrieval system.
+    """
     SUCCESS              : int = 0
     CONNECTION_FAILED    : int = 1000
     ERROR_ACCESSING_INDEX: int = 1001
@@ -88,10 +104,16 @@ class StatusCode(Enum):
 
 
 class IndexType(Enum):
+    """
+    Enumeration for different index types.
+    """
     ESIndex    : int = 1
     CustomIndex: int = 2
 
 
 class DatasetType(Enum):
+    """
+    Enumeration for different dataset types.
+    """
     News     : int = 1
     Wikipedia: int = 2

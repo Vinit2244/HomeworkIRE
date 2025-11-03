@@ -13,6 +13,11 @@ from typing import List, Tuple, Generator
 
 # ======================== CLASSES ========================
 class NewsDataset(Dataset):
+    """
+    Handler for the News dataset from Webhose.
+    Provides methods to download the dataset, calculate word frequencies, preprocess text data, and iterate over files.
+    """
+
     def __init__(self, data_path: str, max_num_docs: int, unzipped: bool) -> None:
         self.data_path = data_path
         self.max_num_docs = max_num_docs
@@ -20,7 +25,23 @@ class NewsDataset(Dataset):
         pass
 
     # Private functions (First returns the total length of the iterator, second is the actual iterator)
-    def _file_iterator(self):
+    def _file_iterator(self) -> Generator:
+        """
+        About:
+        ------
+            Generator that yields file objects for each JSON file in the dataset.
+            Handles both unzipped and zipped datasets.
+            Yields the total number of files as the first value for progress tracking.
+
+        Args:
+        -----
+            None    
+        
+        Yields:
+        -------
+            file object: Open file object for each JSON file in the dataset.
+        """
+
         if self.unzipped:
             all_folders: List[str] = os.listdir(self.data_path)
 
@@ -73,6 +94,21 @@ class NewsDataset(Dataset):
                         yield f
 
     def _unzip_and_clean_dataset(self) -> None:
+        """
+        About:
+        ------
+            Unzips all zipped folders in the "News_Datasets" directory and cleans up unnecessary files.
+            Removes all files except the "News_Datasets" folder before unzipping.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            None
+        """
+
         print(f"{Style.FG_CYAN}Unzipping and cleaning news dataset...{Style.RESET}")
 
         # Remove all the files except the "News_Datasets" folder
@@ -104,6 +140,21 @@ class NewsDataset(Dataset):
 
     # Public functions
     def download_dataset(self) -> None:
+        """
+        About:
+        ------
+            Downloads the News dataset from the Webhose GitHub repository.
+            If unzipped is True, it also unzips and cleans the dataset.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            None
+        """
+
         print(f"{Style.FG_CYAN}Downloading news dataset...{Style.RESET}")
 
         # Make sure the destination directory exists
@@ -120,6 +171,20 @@ class NewsDataset(Dataset):
         print(f"{Style.FG_GREEN}News dataset downloaded at {self.data_path}\n{Style.RESET}")
 
     def get_attributes(self) -> List[str]:
+        """
+        About:
+        ------
+            Retrieves the list of attributes (keys) present in the JSON files of the dataset.
+        
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            List[str]: List of attribute names found in the JSON files.
+        """
+
         # Get attributes from the first JSON file in the dataset
         for f in self._file_iterator():
             # Ignoring the first value which is the total count
@@ -130,6 +195,20 @@ class NewsDataset(Dataset):
         return []
 
     def calculate_word_frequency(self) -> dict:
+        """
+        About:
+        ------
+            Calculates the overall word frequency distribution across all JSON files in the dataset.
+
+        Args:
+        -----
+            None
+
+        Returns:
+        -------
+            dict: A dictionary with words as keys and their corresponding frequencies as values.
+        """
+
         freq: dict = defaultdict(int)
         
         # Updates the overall frequency dictionary with the frequency from a single json file
@@ -150,6 +229,30 @@ class NewsDataset(Dataset):
         return freq
 
     def preprocess(self, lowercase: bool, rem_stop: bool, stopword_langs: List[str], rem_punc: bool, rem_num: bool, rem_special: bool, stem: bool, stemming_algo: str, lemmatize: bool, lemmatization_algo: str) -> None:
+        """
+        About:
+        ------
+            Preprocesses the text data in each JSON file according to the specified parameters.
+            Modifies the "text" field in each JSON file in place.
+
+        Args:
+        -----
+            lowercase (bool): Whether to convert text to lowercase.
+            rem_stop (bool): Whether to remove stopwords.
+            stopword_langs (List[str]): List of languages for stopword removal. Can include "auto".
+            rem_punc (bool): Whether to remove punctuation.
+            rem_num (bool): Whether to remove numbers.
+            rem_special (bool): Whether to remove special characters.
+            stem (bool): Whether to apply stemming.
+            stemming_algo (str): Stemming algorithm to use (e.g., "porter", "snowball").
+            lemmatize (bool): Whether to apply lemmatization.
+            lemmatization_algo (str): Lemmatization algorithm to use (e.g., "wordnet").
+
+        Returns:
+        -------
+            None
+        """
+
         from preprocessing import Preprocessor
         
         preprocessor = Preprocessor()
@@ -194,6 +297,21 @@ class NewsDataset(Dataset):
                 json.dump(data, out_f)
 
     def get_files(self, attributes: List[str]) -> Generator[Tuple[str, dict], None, None]:
+        """
+        About:
+        ------
+            Generator that yields tuples of (unique identifier, payload dictionary) for each JSON file in the dataset.
+            The unique identifier is taken from the first attribute in the provided list, and the payload dictionary contains the remaining attributes.
+        
+        Args:
+        -----
+            attributes (List[str]): List of attribute names to extract from each JSON file. The first attribute is treated as the unique identifier.
+        
+        Yields:
+        -------
+            Tuple[str, dict]: A tuple containing the unique identifier (str) and a dictionary of the remaining attributes.
+        """
+
         for f in self._file_iterator():
             # Ignoring the first value which is the total count
             if type(f) is int:
@@ -215,12 +333,26 @@ class NewsDataset(Dataset):
 
 
 # ================== HELPER FUNCTIONS ====================
-def get_news_dataset_handler(verbose: bool=True) -> NewsDataset:
+def get_news_dataset_handler(max_num_docs: int, verbose: bool=True) -> NewsDataset:
+    """
+    About:
+    ------
+        Helper function to create and return a NewsDataset handler using configuration settings.
+
+    Args:
+    -----
+        max_num_docs (int): Maximum number of documents to handle. Use -1 for all documents.
+        verbose (bool): Whether to print status messages.
+
+    Returns:
+    -------
+        NewsDataset: An instance of the NewsDataset handler.
+    """
+    
     config: dict = load_config()
 
     path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
-    max_num_docs: int = config["max_num_documents"] if config["max_num_documents"] is not None else -1
     if verbose:
         print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}, \n\tUnzipped: {unzipped}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 

@@ -1,11 +1,25 @@
 # ======================== IMPORTS ========================
-from utils import Style, load_config
+from utils import Style
 from constants import DATA_SETTINGS
 from dataset_managers import NewsDataset, WikipediaDataset
 
 
 # ========================= MAIN ==========================
 def main() -> None:
+    """
+    About:
+    -----
+        Main function to download datasets as specified in the configuration.yaml file.
+        
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        None
+    """
+    
     # Download and unzip news dataset
     path_to_news_dataset: str = DATA_SETTINGS["news"]["path"]
     unzip: bool = DATA_SETTINGS["news"]["unzip"]

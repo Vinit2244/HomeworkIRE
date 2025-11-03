@@ -4,7 +4,25 @@ from typing import List
 
 # ====================== ENCODERS ========================
 class Encoder:
+    """
+    Abstract base class for encoding and decoding lists of integers using different compression techniques.
+    """
+
     def gap_encode(self, numbers: List[int]) -> List[int]:
+        """
+        About:
+        ------
+            Encodes a list of sorted integers into their gap representation.
+
+        Args:
+        -----
+            numbers: A list of sorted integers.
+
+        Returns:
+        --------
+            A list of integers representing the gaps between consecutive numbers.
+        """
+
         if not numbers:
             return []
         
@@ -17,6 +35,20 @@ class Encoder:
         return gaps
     
     def gap_decode(self, gaps: List[int]) -> List[int]:
+        """
+        About:
+        ------
+            Decodes a list of gaps back into the original list of integers.
+
+        Args:
+        -----
+            gaps: A list of integers representing the gaps between consecutive numbers.
+
+        Returns:
+        --------
+            A list of sorted integers reconstructed from the gaps.
+        """
+
         if not gaps:
             return []
         
@@ -27,6 +59,20 @@ class Encoder:
         return numbers
     
     def varbyte_encode(self, numbers: List[int]) -> bytes:
+        """
+        About:
+        ------
+            Encodes a list of integers using Variable Byte Encoding.
+
+        Args:
+        -----
+            numbers: A list of integers to encode.
+
+        Returns:
+        --------
+            A bytes object representing the Variable Byte encoded integers.
+        """
+
         stream = bytearray()
         for number in numbers:
             while True:
@@ -40,6 +86,20 @@ class Encoder:
         return bytes(stream)
     
     def varbyte_decode(self, stream: bytes) -> List[int]:
+        """
+        About:
+        ------
+            Decodes a bytes object encoded using Variable Byte Encoding back into a list of integers.
+
+        Args:
+        -----
+            stream: A bytes object representing the Variable Byte encoded integers.
+
+        Returns:
+        --------
+            A list of decoded integers.
+        """
+
         numbers = []
         number = 0
         shift = 0

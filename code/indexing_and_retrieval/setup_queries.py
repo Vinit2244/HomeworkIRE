@@ -8,19 +8,19 @@ from elasticsearch import Elasticsearch, ConnectionError
 from constants import ES_HOST, ES_PORT, ES_SCHEME, MAX_RESULTS, SEARCH_FIELDS, MAX_NUM_DOCUMENTS, PREPROCESSING_SETTINGS, ATTRIBUTES_INDEXED, USERNAME, PASSWORD
 
 
-# ======================== GLOBALS ========================
-
-
-
 # ======================= FUNCTIONS =======================
 def query_and_update(file_path: str) -> None:
     """
-    Description:
+    About:
+    ------
         Executes queries from a JSON file against an Elasticsearch index and updates the file with the results.
 
     Args:
-        file_path: Path to the JSON file containing queries.
+    -----
+        file_path (str): Path to the JSON file containing queries.
+
     Returns:
+    --------
         None
     """
 
@@ -77,7 +77,7 @@ def query_and_update(file_path: str) -> None:
         query_text = item["query"]
         print(f"  ({i+1}/{len(data['queries'])}) Searching for: '{query_text[:70]}...'")
 
-        res = QueryProcessingEngine.process_es_query(es_client, index_id, query_text, SEARCH_FIELDS, MAX_RESULTS, False)
+        res = QueryProcessingEngine.process_es_query(es_client, index_id, query_text, SEARCH_FIELDS, False)
 
         if isinstance(res, StatusCode):
             print(f"{Style.FG_RED}Failed to execute query '{query_text}'.{Style.RESET}")
@@ -85,7 +85,7 @@ def query_and_update(file_path: str) -> None:
             continue
         else:
             doc_ids = [hit['_id'] for hit in res['hits']['hits']] # Sorted by relevance score in descending order by default
-            item['docs'] = doc_ids # Update the 'docs' list in our data structure
+            item['docs'] = doc_ids[:MAX_RESULTS] # Store only the max_results number of top documents
 
     # Write the updated data back to the file
     try:

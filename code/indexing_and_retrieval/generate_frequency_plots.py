@@ -11,6 +11,24 @@ from constants import DATA_SETTINGS, MAX_NUM_DOCUMENTS, TOP_K_WORDS_THRESHOLD, O
 
 # ======================= FUNCTIONS =======================
 def plot_frequency_distribution(freq_dict: Dict[str, int], k: int, title: str, xlabel: str, ylabel: str, output_file_path: str) -> None:
+    """
+    About:
+    ------
+        Plots the frequency distribution of words and saves the plot as an image file.
+    
+    Args:
+    -----
+        freq_dict (Dict[str, int]): Dictionary with words as keys and their frequencies as values.
+        k (int): Number of top words to plot.
+        title (str): Title of the plot.
+        xlabel (str): Label for the x-axis.
+        ylabel (str): Label for the y-axis.
+        output_file_path (str): Path to save the output plot image.
+    
+    Returns:
+    --------
+        None
+    """
     
     def get_x_y(freq_dist: dict) -> Tuple[List[str], List[int]]:
         freqs: List[Tuple[str, int]] = [(word, count) for word, count in freq_dist.items()]
@@ -37,6 +55,20 @@ def plot_frequency_distribution(freq_dict: Dict[str, int], k: int, title: str, x
 
 # ========================= MAIN =========================
 def main(args) -> None:
+    """
+    About:
+    -----
+        Main function to generate and save frequency distribution plots for news and wikipedia datasets.
+
+    Args:
+    -----
+        args: Command line arguments containing data state information.
+
+    Returns:
+    --------
+        None
+    """
+
     print(f"{Style.FG_YELLOW}Using \n\tTop K words threshold: {TOP_K_WORDS_THRESHOLD}, \n\tMax documents: {MAX_NUM_DOCUMENTS}, \n\tOutput folder path: {OUTPUT_FOLDER_PATH}{Style.RESET}. \nTo change, modify config.yaml file.\n")
     os.makedirs(OUTPUT_FOLDER_PATH, exist_ok=True)
 

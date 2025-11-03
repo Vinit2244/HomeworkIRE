@@ -9,7 +9,7 @@ from rich.console import Console
 from indexes import ESIndex, CustomIndex, BaseIndex
 from utils import Style, clear_screen, wait_for_enter
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
-from constants import ES_HOST, ES_PORT, ES_SCHEME, IndexType, DatasetType, StatusCode, INDEX_SETTINGS
+from constants import ES_HOST, ES_PORT, ES_SCHEME, IndexType, DatasetType, StatusCode, INDEX_SETTINGS, MAX_RESULTS, MAX_NUM_DOCUMENTS
 
 
 # ======================= GLOBALS ========================
@@ -18,6 +18,21 @@ settings: List[str] = []
 
 # =================== HELPER FUNCTIONS ====================
 def handle_create_index(idx: BaseIndex) -> None:
+    """
+    About:
+    ------
+        Handles the process of creating an index by interacting with the user to get necessary inputs.
+
+    Args:
+    -----
+        idx (BaseIndex): An instance of the index class to create the index.
+
+    Returns:
+    --------
+        None
+    """
+
+    global settings
     settings.append("Operation: Create Index")
     print_settings()
 
@@ -33,9 +48,9 @@ def handle_create_index(idx: BaseIndex) -> None:
         if dataset_type.value == dataset:
             dataset = dataset_type
             if dataset == DatasetType.News:
-                dataset_handler = get_news_dataset_handler()
+                dataset_handler = get_news_dataset_handler(MAX_NUM_DOCUMENTS)
             else:
-                dataset_handler = get_wikipedia_dataset_handler()
+                dataset_handler = get_wikipedia_dataset_handler(MAX_NUM_DOCUMENTS)
             break
 
     if dataset not in DatasetType:
@@ -68,10 +83,40 @@ def handle_create_index(idx: BaseIndex) -> None:
 
 
 def generate_index_id(core: str, dataset: str, version: str="v1.0") -> str:
+    """
+    About:
+    ------
+        Generates a standardized index identifier based on core type, dataset, and version.
+
+    Args:
+    -----
+        core (str): The core type of the index (e.g., 'ESIndex', 'CustomIndex').
+        dataset (str): The dataset type (e.g., 'News', 'Wikipedia').
+        version (str): The version of the index. Default is 'v1.0'.
+
+    Returns:
+    --------
+        str: A standardized index identifier string.
+    """
+
     return (core + "-" + version + "-" + dataset).lower()  # Elasticsearch index names must be lowercase
 
 
 def pretty_print_query_results(results_json: str) -> None:
+    """
+    About:
+    ------
+        Pretty prints the query results obtained from the index.
+
+    Args:
+    -----
+        results_json (str): The JSON string containing the query results.
+
+    Returns:
+    --------
+        None
+    """
+
     try:
         results = json.loads(results_json)
         hits = results.get("hits", {}).get("hits", [])
@@ -104,6 +149,20 @@ def pretty_print_query_results(results_json: str) -> None:
 
 # ======================= FUNCTIONS =======================
 def menu() -> None:
+    """
+    About:
+    ------
+        Displays an interactive menu for managing indices and querying them.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        None
+    """
+
     global settings
 
     while True:
@@ -257,7 +316,6 @@ def menu() -> None:
                     print_settings()
 
                     index_id = input(f"{Style.FG_MAGENTA}Input index name to query (leave it empty to search across all indexes): {Style.RESET}").strip().lower()
-                    status = idx.load_index(index_id)
                     
                     if status != StatusCode.SUCCESS:
                         print(f"{Style.FG_RED}Failed to load index '{index_id}'.{Style.RESET}\n")
@@ -274,7 +332,8 @@ def menu() -> None:
                             break
                         
                         results = idx.query(query, index_id)
-                        pretty_print_query_results(results)
+                        print(f"{Style.FG_MAGENTA}Showing top {MAX_RESULTS} results:{Style.RESET}")
+                        pretty_print_query_results(results[:MAX_RESULTS])
                         wait_for_enter()
 
                 # List files in Index
@@ -332,6 +391,20 @@ def menu() -> None:
 
 
 def print_settings() -> None:
+    """
+    About:
+    ------
+        Prints the current settings and selections made by the user.
+
+    Args:
+    -----
+        None
+
+    Returns:
+    --------
+        None
+    """
+
     clear_screen()
     for setting in settings:
         print(f"{Style.FG_ORANGE}[!] {setting}{Style.RESET}")
