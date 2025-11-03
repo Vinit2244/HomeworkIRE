@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Set
 from constants import (
     STORAGE_DIR, 
     MAX_RESULTS, 
+    RANKING_SCORE_THRESHOLD,
     DataStore, 
     StatusCode, 
     # Compression,
@@ -178,6 +179,22 @@ class QueryProcessingEngine:
         return query
     
     def _check_phrase_in_doc(self, doc_id: str, words: list, index: dict) -> bool:
+        """
+        About:
+        ------
+            Checks if the given phrase (list of words) exists in the specified document.
+
+        Args:
+        -----
+            doc_id (str): The ID of the document to check.
+            words (list): List of words forming the phrase to check.
+            index (dict): The in-memory representation of the index.
+        
+        Returns:
+        --------
+            bool: True if the phrase exists in the document, False otherwise.
+        """
+
         def get_positions(word: str, doc_id: str) -> list:
             postings = index.get(word, {}).get(doc_id, {})
             if not postings:
@@ -215,6 +232,22 @@ class QueryProcessingEngine:
         return False # No starting position led to a full match
 
     def _execute_custom_query(self, node: dict, index: dict, all_docs: set) -> set:
+        """
+        About:
+        ------
+            Recursively executes the custom boolean query represented by the parse tree node.
+
+        Args:
+        -----
+            node (dict): The current node in the parsed query tree.
+            index (dict): The in-memory representation of the index.
+            all_docs (set): Set of all document IDs in the index.
+
+        Returns:
+        --------
+            set: A set of document IDs matching the query represented by the node.
+        """
+
         if "TERM" in node:
             term = node["TERM"].lower() # Lowercase to match index
             term_data = index.get(term)
@@ -267,7 +300,20 @@ class QueryProcessingEngine:
         raise ValueError(f"Unknown query node: {node}")
 
     def _get_score_key(self, index_info_type: str) -> str | None:
-        """Helper to determine which score to use (tfidf or count)."""
+        """
+        About:
+        ------
+            Maps the index information type to the corresponding score key used in the index postings.
+
+        Args:
+        -----
+            index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
+
+        Returns:
+        --------
+            str | None: The score key corresponding to the index information type, or None if not applicable.
+        """
+
         if index_info_type == IndexInfo.TFIDF.name:
             return "tfidf"
         elif index_info_type == IndexInfo.WORDCOUNT.name:
@@ -277,7 +323,25 @@ class QueryProcessingEngine:
             return None
 
     def _rank_documents_taat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str) -> List[Dict[str, Any]]:
+        """
+        About:
+        ------
+            Ranks documents using Term-at-a-Time (TAAT) approach.
+
+        Args:
+        -----
+            doc_ids_to_rank (Set[str]): Set of document IDs to rank.
+            scoring_terms (List[str]): List of terms to use for scoring.
+            index (Dict[str, Any]): The in-memory index structure.
+            index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
+
+        Returns:
+        --------
+            List[Dict[str, Any]]: A list of ranked documents with their scores.
+        """
+        
         score_key = self._get_score_key(index_info_type)
+
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
         
@@ -305,137 +369,234 @@ class QueryProcessingEngine:
         return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
 
     def _rank_documents_daat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str, optim: str) -> List[Dict[str, Any]]:
+        """
+        About:
+        ------
+            Ranks documents using Document-at-a-Time (DAAT) approach with optional optimizations.
+
+        Args:
+        -----
+            doc_ids_to_rank (Set[str]): Set of document IDs to rank.
+            scoring_terms (List[str]): List of terms to use for scoring.
+            index (Dict[str, Any]): The in-memory index structure.
+            index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
+            optim (str): The optimization strategy used (e.g., EARLYSTOPPING, THRESHOLDING, NONE).
+
+        Returns:
+        --------
+            List[Dict[str, Any]]: A list of ranked documents with their scores.
+        """
+
         score_key = self._get_score_key(index_info_type)
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
 
-        # Prepare posting lists and precompute max term scores
-        term_postings = {}
-        max_term_scores = {}
-        for term in scoring_terms:
-            term = term.lower()
-            postings = index.get(term, {})
-            if not postings:
-                continue
-            
-            # Convert postings dict -> list of {doc_id, score} sorted by doc_id
-            posting_list = [{"doc_id": doc_id, "score": data.get(score_key, 0.0)} for doc_id, data in postings.items()]
-            posting_list.sort(key=lambda x: x["doc_id"])  # ensures sorted order only once if needed
-            term_postings[term] = posting_list
-            max_term_scores[term] = max(p["score"] for p in posting_list)
-
-        # If no valid terms, nothing to rank
-        if not term_postings:
+        # Cache postings for all valid scoring terms
+        valid_terms = [t.lower() for t in scoring_terms if t.lower() in index]
+        if not valid_terms:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
 
-        # Early stopping variables
-        use_early_stop = (optim == Optimizations.EARLYSTOPPING.name)
-        top_k = MAX_RESULTS if use_early_stop else len(doc_ids_to_rank)
-        heap = []  # min-heap for top-k
-        threshold = 0.0  # min score in heap
+        # Prepare posting lists sorted by doc_id (as required by WAND/DAAT)
+        inverted_index = {}
+        max_term_scores = {}
+        for term in valid_terms:
+            postings_dict = index[term]
+            # Convert dict -> list of {doc_id, score}
+            postings_list = [{"doc_id": d_id, "score": d_data.get(score_key, 0.0)}
+                             for d_id, d_data in postings_dict.items()]
+            postings_list.sort(key=lambda x: x["doc_id"])  # ensure sorted order
+            inverted_index[term] = postings_list
+            max_term_scores[term] = max((p["score"] for p in postings_list), default=0.0)
 
-        # Initialize posting pointers
-        pointers = {term: 0 for term in term_postings}
+        use_early_stop = optim == Optimizations.EARLYSTOPPING.name
+        use_threshold = optim == Optimizations.THRESHOLDING.name
 
-        # Iterate over candidate docs (already sorted externally)
-        for doc_id in doc_ids_to_rank:
+        if not use_early_stop:
+            # Fallback to standard DAAT
+            scores_dict = {}
+            for doc_id in doc_ids_to_rank:
+                total_score = 0.0
+                for term in valid_terms:
+                    postings = index.get(term, {})
+                    doc_data = postings.get(doc_id)
+                    if doc_data:
+                        total_score += doc_data.get(score_key, 0.0)
+                if use_threshold and total_score < RANKING_SCORE_THRESHOLD:
+                    continue
+                scores_dict[doc_id] = total_score
+
+            ranked_list = sorted(scores_dict.items(), key=lambda item: item[1], reverse=True)
+            return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
+
+        pointers = {term: 0 for term in valid_terms}
+        top_k_heap = []
+        threshold = 0.0
+        top_k = MAX_RESULTS
+
+        documents_processed = 0
+        documents_skipped = 0
+
+        # Process candidate documents in increasing doc_id order
+        for doc_id in sorted(doc_ids_to_rank):
             actual_score = 0.0
             terms_found = set()
 
-            # Process each term’s postings up to current doc
-            for term, plist in term_postings.items():
+            # Compute actual score for terms that appear in this doc
+            for term in valid_terms:
+                postings = inverted_index[term]
                 ptr = pointers[term]
 
-                # advance pointer if needed (posting lists are sorted)
-                while ptr < len(plist) and plist[ptr]["doc_id"] < doc_id:
+                # Advance pointer to current doc_id or beyond
+                while ptr < len(postings) and postings[ptr]["doc_id"] < doc_id:
                     ptr += 1
-                    pointers[term] = ptr
+                pointers[term] = ptr
 
-                if ptr < len(plist) and plist[ptr]["doc_id"] == doc_id:
-                    actual_score += plist[ptr]["score"]
+                # If the term matches current doc
+                if ptr < len(postings) and postings[ptr]["doc_id"] == doc_id:
+                    actual_score += postings[ptr]["score"]
                     terms_found.add(term)
 
-            # Compute upper bound (actual + max possible of unseen terms)
-            upper_bound = actual_score + sum(
-                max_term_scores[t] for t in term_postings if t not in terms_found
-            )
+            # Estimate upper bound = actual_score + max_possible_remaining
+            upper_bound = actual_score
+            for term in valid_terms:
+                if term not in terms_found:
+                    upper_bound += max_term_scores.get(term, 0.0)
 
-            # Early termination condition
-            if use_early_stop and len(heap) >= top_k and upper_bound <= threshold:
+            # Early termination check
+            if len(top_k_heap) >= top_k and upper_bound <= threshold:
+                documents_skipped += 1
                 continue
 
+            # Use actual score as final (since all terms processed)
             final_score = actual_score
+            documents_processed += 1
 
-            # Push into heap
-            if len(heap) < top_k:
-                heapq.heappush(heap, (final_score, doc_id))
-                threshold = heap[0][0]
+            # Maintain top-k heap
+            if len(top_k_heap) < top_k:
+                heapq.heappush(top_k_heap, (final_score, doc_id))
+                threshold = top_k_heap[0][0]
             elif final_score > threshold:
-                heapq.heapreplace(heap, (final_score, doc_id))
-                threshold = heap[0][0]
+                heapq.heapreplace(top_k_heap, (final_score, doc_id))
+                threshold = top_k_heap[0][0]
 
-        # Sort heap descending by score
-        ranked = sorted(heap, key=lambda x: x[0], reverse=True)
-        return [{"id": doc_id, "score": score} for score, doc_id in ranked]
+        print(f"{Style.FG_BLUE}DAAT EarlyStop processed {documents_processed} docs, "
+              f"skipped {documents_skipped} docs via early termination.{Style.RESET}")
 
+        # Convert heap -> sorted list
+        ranked_list = sorted(top_k_heap, key=lambda item: item[0], reverse=True)
+        return [{"id": doc_id, "score": score} for score, doc_id in ranked_list]
+    
     def _build_es_query(self, node, search_fields: list) -> dict:
-            if not node:
-                raise ValueError("Query parser returned an empty node.")
+        """
+        About:
+        ------
+            Recursively builds an Elasticsearch query from the parsed query tree.
 
-            if "TERM" in node:
-                # Use "match" for a single term (better relevance than match_phrase)
-                return {"multi_match": {
-                    "query": node["TERM"],
-                    "fields": search_fields
-                }}
+        Args:
+        -----
+            node (dict): The current node in the parsed query tree.
+            search_fields (list): List of fields to search in Elasticsearch.
 
-            if "AND" in node:
-                left, right = node["AND"]
+        Returns:
+        --------
+            dict: The Elasticsearch query representation of the node.
+        """
+        
+        if not node:
+            raise ValueError("Query parser returned an empty node.")
+
+        if "TERM" in node:
+            # Use "match" for a single term (better relevance than match_phrase)
+            return {"multi_match": {
+                "query": node["TERM"],
+                "fields": search_fields
+            }}
+
+        if "AND" in node:
+            left, right = node["AND"]
+            return {
+                "bool": {
+                    "must": [self._build_es_query(left, search_fields), self._build_es_query(right, search_fields)]
+                }
+            }
+
+        if "OR" in node:
+            left, right = node["OR"]
+            return {
+                "bool": {
+                    "should": [self._build_es_query(left, search_fields), self._build_es_query(right, search_fields)],
+                    "minimum_should_match": 1
+                }
+            }
+
+        if "NOT" in node:
+            return {"bool": {"must_not": [self._build_es_query(node["NOT"], search_fields)]}}
+
+        if "PHRASE" in node:
+            inner = node["PHRASE"]
+            if "TERM" in inner:
                 return {
-                    "bool": {
-                        "must": [self._build_es_query(left, search_fields), self._build_es_query(right, search_fields)]
+                    "multi_match": {
+                        "query": inner["TERM"],
+                        "fields": search_fields,
+                        "type": "phrase"
                     }
                 }
+            return self._build_es_query(inner, search_fields)
 
-            if "OR" in node:
-                left, right = node["OR"]
-                return {
-                    "bool": {
-                        "should": [self._build_es_query(left, search_fields), self._build_es_query(right, search_fields)],
-                        "minimum_should_match": 1
-                    }
-                }
-
-            if "NOT" in node:
-                return {"bool": {"must_not": [self._build_es_query(node["NOT"], search_fields)]}}
-
-            if "PHRASE" in node:
-                inner = node["PHRASE"]
-                if "TERM" in inner:
-                    return {
-                        "multi_match": {
-                            "query": inner["TERM"],
-                            "fields": search_fields,
-                            "type": "phrase"
-                        }
-                    }
-                return self._build_es_query(inner, search_fields)
-
-            raise ValueError(f"Unknown node type: {node}")
+        raise ValueError(f"Unknown node type: {node}")
 
     # Public functions
     def parse_query(self, query: str) -> dict | StatusCode:
+        """
+        About:
+        ------
+            Parses the input query string into a parse tree.
+
+        Args:
+        -----
+            query (str): The input query string.
+
+        Returns:
+        -------
+            dict | StatusCode: The parse tree representation of the query, or a StatusCode indicating failure.
+        """
+
         try:
             parser = QueryParser(query)
             parsed_tree = parser.parse()
             if parsed_tree is None:
                 raise ValueError("Query parser returned None")
+
         except Exception as e:
             return StatusCode.QUERY_FAILED
         
         return parsed_tree
     
     def process_custom_query(self, query: str, loaded_index: dict, index_id: str, all_doc_ids: List[str], dstore: str, doc_store_handle: Any, redis_client: Any, index_info_type: str, optim: str) -> tuple[set, list] | StatusCode:
+        """
+        About:
+        ------
+            Processes a custom boolean query against a loaded index and returns matching document IDs and ranked hits.
+
+        Args:
+        -----
+            query (str): The boolean query string to process.
+            loaded_index (dict): The in-memory representation of the index.
+            index_id (str): The unique identifier for the index.
+            all_doc_ids (List[str]): List of all document IDs in the index.
+            dstore (str): The type of document store used (e.g., CUSTOM, ROCKSDB, REDIS).
+            doc_store_handle (Any): Handle to the document store (e.g., RocksDB DB instance).
+            redis_client (Any): Redis client instance if using Redis as document store.
+            index_info_type (str): The type of index information (e.g., TFIDF, WORDCOUNT).
+            optim (str): The optimization strategy used (e.g., EARLYSTOPPING, NONE).
+
+        Returns:
+        -------
+            tuple[set, list] | StatusCode: A tuple containing the set of all matched document IDs and a list of ranked hits,
+            or a StatusCode indicating failure.
+        """
+        
         # Preprocess the query
         preprocessed_query = self._preprocess_query(query)
         
@@ -464,7 +625,6 @@ class QueryProcessingEngine:
         
         ranked_docs = []
         
-        # =========== MODIFICATION START ===========
         if self.qproc == QueryProc.TERM.name:
             ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
         elif self.qproc == QueryProc.DOC.name:
@@ -518,6 +678,24 @@ class QueryProcessingEngine:
         return matching_doc_ids_set, hits
     
     def process_es_query(self, es_client, index_id: str, query: str, search_fields: list, source: bool=True):
+        """
+        About:
+        ------
+            Processes a query using Elasticsearch client.
+
+        Args:
+        -----
+            es_client: The Elasticsearch client instance.
+            index_id (str): The unique identifier for the index.
+            query (str): The query string to process.
+            search_fields (list): List of fields to search in Elasticsearch.
+            source (bool): Whether to include the source document in the results.
+
+        Returns:
+        -------
+            The search results from Elasticsearch or a StatusCode indicating failure.
+        """
+
         if not search_fields:
             print(f"{Style.FG_RED}Error: No search_fields provided.{Style.RESET}")
             return StatusCode.QUERY_FAILED

@@ -42,16 +42,12 @@ def preprocess_data(config: dict) -> None:
     print(f"{Style.FG_CYAN}Preprocessing news dataset...{Style.RESET}")
     path_to_news_dataset: str = config["data"]["news"]["path"]
     unzip: bool = config["data"]["news"]["unzip"]
-    NewsDataset(path_to_news_dataset, max_num_documents, unzip).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
-                             rem_num, rem_special, stem, stemming_algo,
-                             lemmatize, lemmatization_algo)
+    NewsDataset(path_to_news_dataset, max_num_documents, unzip).preprocess(lowercase, rem_stop, stopword_langs, rem_punc, rem_num, rem_special, stem, stemming_algo, lemmatize, lemmatization_algo)
     print(f"{Style.FG_GREEN}Preprocessing of news dataset completed.\n{Style.RESET}")
 
     print(f"{Style.FG_CYAN}Preprocessing wikipedia dataset...{Style.RESET}")
     path_to_wikipedia_dataset: str = config["data"]["wikipedia"]["path"]
-    WikipediaDataset(path_to_wikipedia_dataset, max_num_documents).preprocess(lowercase, rem_stop, stopword_langs, rem_punc,
-                             rem_num, rem_special, stem, stemming_algo,
-                             lemmatize, lemmatization_algo)
+    WikipediaDataset(path_to_wikipedia_dataset, max_num_documents).preprocess(lowercase, rem_stop, stopword_langs, rem_punc, rem_num, rem_special, stem, stemming_algo, lemmatize, lemmatization_algo)
     print(f"{Style.FG_GREEN}Preprocessing of wikipedia dataset completed.\n{Style.RESET}")
 
 

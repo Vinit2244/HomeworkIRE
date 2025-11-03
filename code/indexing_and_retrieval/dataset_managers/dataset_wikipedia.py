@@ -104,6 +104,7 @@ class WikipediaDataset(Dataset):
                     curr_row_count += 1
                 if break_flag:
                     break
+
         return freq
 
     def preprocess(self, lowercase: bool, rem_stop: bool, stopword_langs: List[str], rem_punc: bool, rem_num: bool, rem_special: bool, stem: bool, stemming_algo: str, lemmatize: bool, lemmatization_algo: str) -> None:
@@ -141,6 +142,7 @@ class WikipediaDataset(Dataset):
             for parquet_file in self.wikipedia_parquet_files:
                 break_flag = False
                 parquet_file_path: str = os.path.join(self.data_path, parquet_file)
+
                 df = pd.read_parquet(parquet_file_path, engine='pyarrow')
                 processed_texts = []
                 for text in df["text"]:
@@ -238,6 +240,7 @@ def get_wikipedia_dataset_handler(max_num_docs: int, verbose: bool=True) -> Wiki
     config = load_config()
     
     data_path: str = config["data"]["wikipedia"]["path"]
+    
     if verbose:
         print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}.{Style.RESET}\nTo change, modify config.yaml file.\n")
     

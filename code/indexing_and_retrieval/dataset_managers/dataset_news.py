@@ -5,9 +5,9 @@ import utils
 import zipfile
 import subprocess
 from tqdm import tqdm
-from utils import Style, load_config
 from .dataset_base import Dataset
 from collections import defaultdict
+from utils import Style, load_config
 from typing import List, Tuple, Generator
 
 
@@ -213,6 +213,20 @@ class NewsDataset(Dataset):
         
         # Updates the overall frequency dictionary with the frequency from a single json file
         def update_freq_dict(f):
+            """
+            About:
+            ------
+                Updates the overall frequency dictionary with the frequency from a single json file.
+
+            Args:
+            -----
+                f: File object of the JSON file.
+
+            Returns:
+            -------
+                None
+            """
+
             text: str = json.load(f)["text"]
             file_freq: dict = utils.get_word_freq_dist(text)
             for word, count in file_freq.items():
@@ -226,6 +240,7 @@ class NewsDataset(Dataset):
             if type(f) is int:
                 continue
             update_freq_dict(f)
+
         return freq
 
     def preprocess(self, lowercase: bool, rem_stop: bool, stopword_langs: List[str], rem_punc: bool, rem_num: bool, rem_special: bool, stem: bool, stemming_algo: str, lemmatize: bool, lemmatization_algo: str) -> None:
@@ -353,6 +368,7 @@ def get_news_dataset_handler(max_num_docs: int, verbose: bool=True) -> NewsDatas
 
     path: str = config["data"]["news"]["path"]
     unzipped: bool = config["data"]["news"]["unzip"]
+
     if verbose:
         print(f"{Style.FG_YELLOW}Using \n\tMax docs: {max_num_docs}, \n\tUnzipped: {unzipped}{Style.RESET}. \nTo change, modify config.yaml file.\n")
 
