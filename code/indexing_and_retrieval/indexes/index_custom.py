@@ -555,7 +555,7 @@ class CustomIndex(BaseIndex):
         if isinstance(all_doc_ids, StatusCode):
             return all_doc_ids
 
-        matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore, self.doc_store_handle, self.redis_client, self.info)
+        matching_doc_ids, hits = engine.process_custom_query(query, self.loaded_index, index_id, all_doc_ids, self.dstore, self.doc_store_handle, self.redis_client, self.info, self.optim)
 
         if isinstance(matching_doc_ids, StatusCode):
             return matching_doc_ids # Query failed

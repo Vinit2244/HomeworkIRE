@@ -8,26 +8,27 @@ from dotenv import load_dotenv
 # ======================= CONSTANTS =======================
 # Configurations from config.yaml
 config = load_config()
-ES_HOST               : str  = config.get("elasticsearch", {}).get("host", "localhost")
-ES_PORT               : int  = config.get("elasticsearch", {}).get("port", 9200)
-ES_SCHEME             : str  = config.get("elasticsearch", {}).get("scheme", "http")
-REDIS_HOST            : str  = config.get("redis", {}).get("host", "localhost")
-REDIS_PORT            : int  = config.get("redis", {}).get("port", 6379)
-REDIS_DB              : int  = config.get("redis", {}).get("db", 0)
+ES_HOST                : str  = config.get("elasticsearch", {}).get("host", "localhost")
+ES_PORT                : int  = config.get("elasticsearch", {}).get("port", 9200)
+ES_SCHEME              : str  = config.get("elasticsearch", {}).get("scheme", "http")
+REDIS_HOST             : str  = config.get("redis", {}).get("host", "localhost")
+REDIS_PORT             : int  = config.get("redis", {}).get("port", 6379)
+REDIS_DB               : int  = config.get("redis", {}).get("db", 0)
 
-DATA_SETTINGS         : dict = config.get("data", {})
-INDEX_SETTINGS        : dict = config.get("index", {})
-PREPROCESSING_SETTINGS: dict = config.get("preprocessing", {})
+DATA_SETTINGS          : dict = config.get("data", {})
+INDEX_SETTINGS         : dict = config.get("index", {})
+PREPROCESSING_SETTINGS : dict = config.get("preprocessing", {})
 
-MAX_RESULTS           : int  = config.get("max_results", 50)
-SEARCH_FIELDS         : str  = config.get("search_fields", ["text"])
-MAX_NUM_DOCUMENTS     : int  = config.get("max_num_documents", -1)
-TOP_K_WORDS_THRESHOLD : int  = config.get("top_k_words_threshold", 50)
-CHUNK_SIZE            : int  = config.get("elasticsearch", {}).get("chunk_size", 500)
+MAX_RESULTS            : int  = config.get("max_results", 50)
+SEARCH_FIELDS          : str  = config.get("search_fields", ["text"])
+MAX_NUM_DOCUMENTS      : int  = config.get("max_num_documents", -1)
+TOP_K_WORDS_THRESHOLD  : int  = config.get("top_k_words_threshold", 50)
+CHUNK_SIZE             : int  = config.get("elasticsearch", {}).get("chunk_size", 500)
+RANKING_SCORE_THRESHOLD: float = config.get("ranking_score_threshold", 0.1)
 
-STORAGE_DIR           : str  = config.get("storage_folder_path", "./storage")
-TEMP_FOLDER_PATH      : str  = config.get("temp_folder_path", "./temp")
-OUTPUT_FOLDER_PATH    : str  = config.get("output_folder_path", "./output")
+STORAGE_DIR            : str  = config.get("storage_folder_path", "./storage")
+TEMP_FOLDER_PATH       : str  = config.get("temp_folder_path", "./temp")
+OUTPUT_FOLDER_PATH     : str  = config.get("output_folder_path", "./output")
 os.makedirs(STORAGE_DIR, exist_ok=True)
 os.makedirs(TEMP_FOLDER_PATH, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER_PATH, exist_ok=True)
@@ -62,7 +63,6 @@ class Compression(Enum):
 
 class Optimizations(Enum):
     NONE         : str = '0'
-    SKIPPING     : str = 'sp'
     THRESHOLDING : str = 'th'
     EARLYSTOPPING: str = 'es'
 

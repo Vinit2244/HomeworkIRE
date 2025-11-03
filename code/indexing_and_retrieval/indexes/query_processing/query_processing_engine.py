@@ -2,17 +2,20 @@
 import re
 import os
 import json
+import heapq
 from utils import Style
 from indexes import Encoder
 from typing import List, Dict, Any, Set
 from constants import (
     STORAGE_DIR, 
     MAX_RESULTS, 
+    RANKING_SCORE_THRESHOLD,
     DataStore, 
     StatusCode, 
     Compression,
     IndexInfo,
-    QueryProc
+    QueryProc,
+    Optimizations
 )
 
 
@@ -228,7 +231,7 @@ class QueryProcessingEngine:
             print(f"{Style.FG_RED}Error: Ranking requested but index type '{index_info_type}' is not compatible for ranking. Returning unranked results.{Style.RESET}")
             return None
 
-    def _rank_documents_taat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str) -> List[Dict[str, Any]]:
+    def _rank_documents_taat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str, optim: str) -> List[Dict[str, Any]]:
         score_key = self._get_score_key(index_info_type)
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
@@ -251,17 +254,21 @@ class QueryProcessingEngine:
         for doc_id in doc_ids_to_rank:
             if doc_id not in scores:
                 scores[doc_id] = 0.0
+
+        if optim == Optimizations.THRESHOLDING.name:
+            scores = {
+                doc_id: score for doc_id, score in scores.items() 
+                if score >= RANKING_SCORE_THRESHOLD
+            }
                 
         ranked_list = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         
         return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
 
-    def _rank_documents_daat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str) -> List[Dict[str, Any]]:
+    def _rank_documents_daat(self, doc_ids_to_rank: Set[str], scoring_terms: List[str], index: Dict[str, Any], index_info_type: str, optim: str) -> List[Dict[str, Any]]:
         score_key = self._get_score_key(index_info_type)
         if not score_key:
             return [{"id": doc_id, "score": 0.0} for doc_id in doc_ids_to_rank]
-
-        scores = {}
 
         # Cache postings for all terms first
         term_postings = {}
@@ -269,20 +276,41 @@ class QueryProcessingEngine:
             term = term.lower()
             term_postings[term] = index.get(term, {})
         
+        use_threshold = optim == Optimizations.THRESHOLDING.name
+        use_early_stop = optim == Optimizations.EARLYSTOPPING.name
+
+        scores_heap = []
+        scores_dict = {} 
+
         # DAAT: Iterate through each document that passed the filter
         for doc_id in doc_ids_to_rank:
             total_score = 0.0
-
             for term, postings in term_postings.items():
                 doc_data = postings.get(doc_id)
                 if doc_data:
                     total_score += doc_data.get(score_key, 0.0)
             
-            scores[doc_id] = total_score
+            if use_threshold and total_score < RANKING_SCORE_THRESHOLD:
+                continue # Skip this document entirely
+
+            if use_early_stop:
+                if len(scores_heap) < MAX_RESULTS:
+                    heapq.heappush(scores_heap, (total_score, doc_id))
+                elif total_score > scores_heap[0][0]: # If score is better than the worst in heap
+                    # Replace the smallest item with the new item
+                    heapq.heapreplace(scores_heap, (total_score, doc_id))
+            else:
+                scores_dict[doc_id] = total_score
         
-        ranked_list = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-        
-        return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
+        if use_early_stop:
+            # Heap contains the top-k, but they are a min-heap
+            # Sort them descending by score
+            ranked_list = sorted(scores_heap, key=lambda item: item[0], reverse=True)
+            return [{"id": doc_id, "score": score} for score, doc_id in ranked_list]
+        else:
+            # Sort the regular dictionary
+            ranked_list = sorted(scores_dict.items(), key=lambda item: item[1], reverse=True)
+            return [{"id": doc_id, "score": score} for doc_id, score in ranked_list]
 
     def _build_es_query(self, node, search_fields: list) -> dict:
             if not node:
@@ -341,7 +369,7 @@ class QueryProcessingEngine:
         
         return parsed_tree
     
-    def process_custom_query(self, query: str, loaded_index: dict, index_id: str, all_doc_ids: List[str], dstore: str, doc_store_handle: Any, redis_client: Any, index_info_type: str) -> tuple[set, list] | StatusCode:
+    def process_custom_query(self, query: str, loaded_index: dict, index_id: str, all_doc_ids: List[str], dstore: str, doc_store_handle: Any, redis_client: Any, index_info_type: str, optim: str) -> tuple[set, list] | StatusCode:
         # Preprocess the query
         preprocessed_query = self._preprocess_query(query)
         
@@ -369,14 +397,13 @@ class QueryProcessingEngine:
             return StatusCode.QUERY_FAILED
         
         ranked_docs = []
-
-        # Check if ranking is enabled for this index
-        if self.qproc == QueryProc.TERM.name:
-            ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type)
-        elif self.qproc == QueryProc.DOC.name:
-            ranked_docs = self._rank_documents_daat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type)
+        
+        # =========== MODIFICATION START ===========
+        if self.qproc == QueryProc.TAAT.name:
+            ranked_docs = self._rank_documents_taat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
+        elif self.qproc == QueryProc.DAAT.name:
+            ranked_docs = self._rank_documents_daat(matching_doc_ids_set, scoring_terms, loaded_index, index_info_type, optim)
         else:
-            # No ranking requested (qproc == "NONE")
             ranked_docs = [{"id": doc_id, "score": 0.0} for doc_id in matching_doc_ids_set]
 
         hits = []
