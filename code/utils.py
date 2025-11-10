@@ -4,7 +4,7 @@ import yaml
 from typing import List
 from collections import defaultdict
 
-CONFIG_FILE_PATH: str = "../../config.yaml" # Relative to this file
+CONFIG_FILE_PATH: str = "../config.yaml" # Relative to this file
 
 
 # ======================== CLASSES ========================
@@ -53,6 +53,7 @@ def load_config() -> dict:
     --------
         config (dict): Configuration dictionary.
     '''
+    
     with open(CONFIG_FILE_PATH, 'r') as f:
         config = yaml.safe_load(f)
     return config

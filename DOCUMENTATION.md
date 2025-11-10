@@ -27,7 +27,7 @@ This codebase implements a custom **information retrieval system** from the grou
 The project is organized into a clear directory structure to separate concerns and improve maintainability. All core logic resides within the `code/indexing_and_retrieval/` directory.
 
 ```bash
-code/indexing_and_retrieval/
+code/
 ├── main.py                   # Main entry point for creating and managing indices.
 ├── performance_metrics.py    # Script for performance testing and plotting.
 ├── preprocess_data.py        # Handles text preprocessing (tokenization, stemming, etc.).

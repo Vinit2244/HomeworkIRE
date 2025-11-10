@@ -7,23 +7,20 @@ import threading
 import numpy as np
 import seaborn as sns
 from tqdm import tqdm
+from utils import Style
 import matplotlib.pyplot as plt
 from prettytable import PrettyTable
-from utils import Style, load_config
 from typing import List, Dict, Any, Set
 from indexes import ESIndex, CustomIndex, BaseIndex
 from dataset_managers import get_news_dataset_handler, get_wikipedia_dataset_handler
-from constants import TEMP_FOLDER_PATH, ES_HOST, ES_PORT, ES_SCHEME, OUTPUT_FOLDER_PATH, TEMP_FOLDER_PATH
+from constants import TEMP_FOLDER_PATH, ES_HOST, ES_PORT, ES_SCHEME, OUTPUT_FOLDER_PATH, TEMP_FOLDER_PATH, MAX_NUM_DOCUMENTS
 
 
 # ======================= GLOBALS =========================
 memory_usage = []
 monitoring = True
 
-config = load_config()
-max_num_docs = config.get("max_num_documents", 1000)
-
-print(f"{Style.FG_YELLOW}Using max_num_documents = {max_num_docs} for performance metrics calculations. To change, modify config.yaml file.{Style.RESET}\n")
+print(f"{Style.FG_YELLOW}Using max_num_documents = {MAX_NUM_DOCUMENTS} for performance metrics calculations. To change, modify config.yaml file.{Style.RESET}\n")
 
 INTERVAL = 0.01 # seconds
 PLOT_ES = True  # Whether to plot ES index in latency comparison
@@ -276,9 +273,9 @@ def setup(dataset: str, index_type: str, index_id: str, info: str, dstore: str, 
     
     # Return only the index if specified
     if dataset == "News":
-        dataset_handler = get_news_dataset_handler(max_num_docs, verbose=False)
+        dataset_handler = get_news_dataset_handler(MAX_NUM_DOCUMENTS, verbose=False)
     elif dataset == "Wikipedia":
-        dataset_handler = get_wikipedia_dataset_handler(max_num_docs, verbose=False)
+        dataset_handler = get_wikipedia_dataset_handler(MAX_NUM_DOCUMENTS, verbose=False)
     else:
         print(f"{Style.FG_RED}Invalid dataset for latency calculation.{Style.RESET}")
         return
